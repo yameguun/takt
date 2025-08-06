@@ -13,13 +13,21 @@
       <%= f.select :department_id, @company.departments.map{|o| [o.name, o.id]}, {}, {class: 'form-control'} %>
     </div>
   </div>
-  
   <div class="form-group">
     <label class="col-sm-2 control-label">氏名</label>
     <div class="col-sm-10">
       <%= f.text_field :name, class: 'form-control', placeholder: '三角太郎' %>
       <% if f.object.errors.include?(:name) %>
       <p style="color: red;"><%= f.object.errors.full_messages_for(:name).first %>
+      <% end %>
+    </div>
+  </div>
+  <div class="form-group">
+    <label class="col-sm-2 control-label">時間単価</label>
+    <div class="col-sm-10">
+      <%= f.number_field :unit_price, class: 'form-control' %>
+      <% if f.object.errors.include?(:unit_price) %>
+      <p style="color: red;"><%= f.object.errors.full_messages_for(:unit_price).first %>
       <% end %>
     </div>
   </div>

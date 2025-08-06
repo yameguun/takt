@@ -55,7 +55,7 @@ group :development, :test do
   gem "rubocop-rails-omakase", require: false
   gem "dotenv-rails"
   gem "seed-fu"
-  gem "annotate"
+  gem "annotaterb"
 end
 
 group :development do

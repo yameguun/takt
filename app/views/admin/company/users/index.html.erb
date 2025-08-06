@@ -21,7 +21,7 @@
     </div>
     <div class="wrapper wrapper-content animated fadeInRight">
       <div class="row">
-        <div class="col-lg-6">
+        <div class="col-lg-12">
           <div class="ibox float-e-margins">
             <div class="ibox-content">
               <table class="table table-bordered">
@@ -30,6 +30,7 @@
                     <th>ID</th>
                     <th>部署名</th>
                     <th>氏名</th>
+                    <th>時間単価</th>
                     <th></th>
                   </tr>
                 </thead>
@@ -39,6 +40,7 @@
                       <td><%= user.id %></td>
                       <td><%= user&.department&.name %></td>
                       <td><%= user.name %></td>
+                      <td><%= number_to_currency(user.unit_price) %></td>
                       <td>
                         <%= link_to '修正', edit_admin_company_user_path(@company,user), class: 'btn btn-primary btn-sm' %>
                         <%= link_to '削除', admin_company_user_path(@company,user), class: 'btn btn-danger btn-sm', data: { turbo_method: :delete, turbo_confirm: '削除しますか？' } %>

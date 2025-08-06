@@ -21,7 +21,7 @@ class Admin::Company::UsersController < Admin::ApplicationController
   private
 
   def user_params
-    params.require(:user).permit(:company_id, :department_id, :name)
+    params.require(:user).permit(:company_id, :department_id, :name, :unit_price)
   end
 
   def set_company

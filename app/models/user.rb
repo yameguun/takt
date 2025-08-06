@@ -2,19 +2,24 @@
 #
 # Table name: users
 #
-#  id              :integer          not null, primary key
-#  company_id      :integer          not null
-#  department_id   :integer
+#  id              :bigint           not null, primary key
 #  email           :string(255)      not null
-#  password_digest :string(255)
 #  name            :string(255)
+#  password_digest :string(255)
+#  unit_price      :integer          default(0), not null
 #  created_at      :datetime         not null
 #  updated_at      :datetime         not null
+#  company_id      :bigint           not null
+#  department_id   :integer
 #
 # Indexes
 #
 #  index_users_on_company_id  (company_id)
 #  index_users_on_email       (email) UNIQUE
+#
+# Foreign Keys
+#
+#  fk_rails_...  (company_id => companies.id)
 #
 
 class User < ApplicationRecord
@@ -25,4 +30,5 @@ class User < ApplicationRecord
   belongs_to :department, optional: true
 
   validates :email, presence: true, uniqueness: true, format: { with: URI::MailTo::EMAIL_REGEXP }
+  validates :unit_price, presence: true, numericality: true
 end

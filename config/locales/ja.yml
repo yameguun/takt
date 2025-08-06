@@ -1,0 +1,9 @@
+ja:
+  number:
+    currency:
+      format:
+        unit: "円"
+        precision: 0
+        delimiter: ","
+        separator: "."
+        format: "%n%u" # 数値(n)と単位(u)の順番を指定
