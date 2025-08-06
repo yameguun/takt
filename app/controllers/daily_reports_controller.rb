@@ -5,26 +5,26 @@ class DailyReportsController < BaseController
 
     ActiveRecord::Base.transaction do
       @daily_report = current_user.daily_reports.find_or_initialize_by(date: @write_date)
-
-      # 既存の作業項目を一度すべて削除する
       @daily_report.daily_report_projects.destroy_all
 
-      # Strong Parameters を使って日報と新しい作業項目をまとめて更新
-      # updateメソッドが assign_attributes と save を一度に行います
       if @daily_report.update(daily_report_params)
-        # 成功
+        # 成功メッセージをflashに格納します
+        flash.now[:success] = "日報を提出しました。"
+        # この後、Railsが自動的に create.turbo_stream.erb を探しに行きます
       else
-        # バリデーションエラーなどで失敗した場合は例外が発生し、下の rescue に飛ぶ
-        raise ActiveRecord::Rollback
+        # バリデーションエラーなどで失敗した場合
+        flash.now[:danger] = "入力内容に誤りがあります。内容を確認してください。"
+        # フォームをエラーメッセージ付きで再描画するために、turbo_streamを描画します
+        render :create, status: :unprocessable_entity and return
       end
     end
 
-    render json: @daily_report.as_json(include: :daily_report_projects), status: :ok
-
   rescue ActiveRecord::RecordInvalid => e
-    render json: { errors: e.record.errors.full_messages }, status: :unprocessable_entity
+    flash.now[:danger] = e.record.errors.full_messages.join(", ")
+    render :create, status: :unprocessable_entity
   rescue => e
-    render json: { errors: [e.message] }, status: :internal_server_error
+    flash.now[:danger] = "予期せぬエラーが発生しました: #{e.message}"
+    render :create, status: :internal_server_error
   end
 
   private

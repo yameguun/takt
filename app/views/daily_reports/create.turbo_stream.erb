@@ -1,0 +1,46 @@
+<%# 1. 通知メッセージの表示 %>
+<%# "notifications" IDを持つdivの先頭に、先ほど作った共通パーツを描画します %>
+<%= turbo_stream.prepend "notifications" do %>
+  <%= render "shared/flash_messages" %>
+<% end %>
+
+
+<%# 2. 成功した場合の追加処理 %>
+<% if flash[:success].present? %>
+  <%# ページに直接スクリプトを埋め込み、通知を自動で消し、フォームをリセットします %>
+  <%= turbo_stream.append "body" do %>
+    <script>
+      $(document).ready(function() {
+        // 5秒後に通知をフェードアウトさせてから削除
+        $("#notifications .alert").delay(5000).fadeOut(500, function() {
+            $(this).remove();
+        });
+
+        // フォームをリセット（確認ダイアログなし）
+        $('#dailyReportForm')[0].reset();
+        $('.work-item:not(:first)').remove();
+        $('.client-id, .project-id').val('');
+        $('.project-input').prop('disabled', true);
+        
+        const today = new Date();
+        const formattedDate = today.getFullYear() + '-' +
+            String(today.getMonth() + 1).padStart(2, '0') + '-' +
+            String(today.getDate()).padStart(2, '0');
+        $('#reportDate').val(formattedDate);
+        
+        $('.remove-work-btn').hide();
+        $('#totalHours').text('0.0');
+        $('.suggestions-dropdown').hide();
+      });
+    </script>
+  <% end %>
+<% end %>
+
+
+<%# 3. バリデーションエラーで失敗した場合の処理 %>
+<% if @daily_report&.errors&.any? %>
+  <%# フォーム全体を、エラーメッセージ付きの新しいフォームに差し替えます %>
+  <%= turbo_stream.replace "dailyReportForm" do %>
+    <%= render 'form' %>
+  <% end %>
+<% end %>

@@ -1,0 +1,14 @@
+<% flash.each do |type, message| %>
+  <%
+    alert_class = case type.to_sym
+                  when :success then "alert-success"
+                  when :danger  then "alert-danger"
+                  when :warning then "alert-warning"
+                  else "alert-info"
+                  end
+  %>
+  <div class="alert <%= alert_class %> alert-dismissible" role="alert" style="margin: 0 20px 20px;">
+    <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+    <%= message %>
+  </div>
+<% end %>
