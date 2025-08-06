@@ -26,6 +26,7 @@ Rails.application.routes.draw do
     scope module: :company do
       resources :companies, except: [:show] do
         resources :users, except: [:new, :create, :show]
+        resources :departments, except: [:show]
       end
     end
   end

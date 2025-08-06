@@ -4,13 +4,16 @@
     <%= render '/admin/shared/navbar' %>
     <div class="row wrapper border-bottom white-bg page-heading">
       <div class="col-lg-10">
-        <h2>会社一覧</h2>
+        <h2>部署一覧</h2>
         <ol class="breadcrumb">
           <li>
             <a href="/admin">Home</a>
           </li>
+          <li>
+            <%= link_to @company.name, admin_companies_path %>
+          </li>
           <li class="active">
-            <strong>会社一覧</strong>
+            <strong>部署一覧</strong>
           </li>
         </ol>
       </div>
@@ -18,39 +21,34 @@
     </div>
     <div class="wrapper wrapper-content animated fadeInRight">
       <div class="row">
-        <div class="col-lg-12">
+        <div class="col-lg-6">
           <div class="ibox float-e-margins">
             <div class="ibox-title" style="text-align: right;">
-              <a href="/admin/companies/new" class="btn btn-primary">新規登録</a>
+              <%= link_to "新規登録", new_admin_company_department_path(@company), class: 'btn btn-primary btn-sm' %>
             </div>
             <div class="ibox-content">
               <table class="table table-bordered">
                 <thead>
                   <tr>
                     <th>ID</th>
-                    <th>会社名</th>
+                    <th>部署名</th>
                     <th></th>
                   </tr>
                 </thead>
                 <tbody>
-                  <% @companies.each do |company| %>
+                  <% @departments.each do |department| %>
                     <tr>
-                      <td><%= company.id %></td>
-                      <td><%= company.name %></td>
+                      <td><%= department.id %></td>
+                      <td><%= department.name %></td>
                       <td>
-                        <%= link_to '修正', edit_admin_company_path(company), class: 'btn btn-primary btn-sm' %>
-                        <%= link_to admin_company_departments_path(company), class: 'btn btn-info btn-sm' do %>
-                          <i class="fa fa-building-o"></i> 部署
-                        <% end %>
-                        <%= link_to admin_company_users_path(company), class: 'btn btn-info btn-sm' do %>
-                          <i class="fa fa-user"></i> メンバー
-                        <% end %>
+                        <%= link_to '修正', edit_admin_company_department_path(@company,department), class: 'btn btn-primary btn-sm' %>
+                        <%= link_to '削除', admin_company_department_path(@company,department), class: 'btn btn-danger btn-sm', data: { turbo_method: :delete, turbo_confirm: '削除しますか？' } %>
                       </td>
                     </tr>
                   <% end %>
                 </tbody>
               </table>
-              <%= paginate @companies, theme: 'admin' %>
+              <%= paginate @departments, theme: 'admin' %>
             </div>
           </div>
         </div>

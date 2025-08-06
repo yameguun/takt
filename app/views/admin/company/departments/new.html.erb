@@ -10,7 +10,10 @@
             <a href="/admin">ダッシュボード</a>
           </li>
           <li>
-            <%= link_to '会社', admin_companies_path %>
+            <%= link_to @company.name, admin_companies_path %>
+          </li>
+          <li>
+            <%= link_to '部署一覧', admin_company_departments_path(@company) %>
           </li>
           <li>
             新規登録
@@ -21,7 +24,7 @@
 
     <div class="wrapper wrapper-content">
       <div class="row">
-        <div class="col-lg-12">
+        <div class="col-lg-6">
           <div class="ibox float-e-margins">
             <div class="ibox-content">
               <%= render 'form' %>

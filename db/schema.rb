@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_07_30_043720) do
+ActiveRecord::Schema[8.0].define(version: 2025_08_06_010018) do
   create_table "action_mailbox_inbound_emails", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
     t.integer "status", default: 0, null: false
     t.string "message_id", null: false
@@ -81,6 +81,15 @@ ActiveRecord::Schema[8.0].define(version: 2025_07_30_043720) do
     t.datetime "updated_at", null: false
   end
 
+  create_table "departments", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
+    t.bigint "company_id", null: false
+    t.string "name", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["company_id"], name: "index_departments_on_company_id"
+    t.index ["name"], name: "index_departments_on_name", unique: true
+  end
+
   create_table "users", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
     t.bigint "company_id", null: false
     t.string "email", null: false
@@ -95,5 +104,6 @@ ActiveRecord::Schema[8.0].define(version: 2025_07_30_043720) do
   add_foreign_key "active_storage_attachments", "active_storage_blobs", column: "blob_id"
   add_foreign_key "active_storage_variant_records", "active_storage_blobs", column: "blob_id"
   add_foreign_key "authentications", "users"
+  add_foreign_key "departments", "companies"
   add_foreign_key "users", "companies"
 end
