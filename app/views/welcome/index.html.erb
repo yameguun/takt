@@ -5,7 +5,7 @@
     <%= render 'shared/navbar' %>
     <div class="row wrapper border-bottom white-bg page-heading">
       <div class="col-lg-10">
-        <h2>日報</h2>
+        <h2>日報（<%= @write_date %>）</h2>
         <ol class="breadcrumb">
           <li>
             <a href="/admin">日報を書く</a>
@@ -34,8 +34,6 @@
                       </div>
 
                       <div id="workList" class="work-list">
-                        <%# (※) @daily_report.works は実際の関連名に修正してください %>
-                        <%# データがない場合は、空のworkオブジェクトを1つ持つ配列を作成 %>
                         <% works = @daily_report.daily_report_projects.presence || [@daily_report.daily_report_projects.build] %>
                         <% works.each_with_index do |work, index| %>
                           <div class="work-item" data-work-index="<%= index %>">
@@ -43,7 +41,6 @@
                                   <div class="col-sm-4">
                                       <div class="form-group">
                                           <label class="control-label">顧客名 <span class="text-danger">*</span></label>
-                                          <%# (※) work.project.client.name は実際のモデル関連に合わせてください %>
                                           <input type="text" class="form-control client-input" name="works[<%= index %>][customer]" placeholder="顧客名を入力" required autocomplete="off" value="<%= work.try(:project).try(:client).try(:name) %>">
                                           <input type="hidden" class="client-id" name="works[<%= index %>][client_id]" value="<%= work.try(:project).try(:client_id) %>">
                                           <div class="suggestions-dropdown client-suggestions"></div>
@@ -52,8 +49,6 @@
                                   <div class="col-sm-4">
                                       <div class="form-group">
                                           <label class="control-label">案件名 <span class="text-danger">*</span></label>
-                                          <%# (※) work.project.name は実際のモデル関連に合わせてください %>
-                                          <%# 案件IDがなければdisabledにする %>
                                           <input type="text" class="form-control project-input" name="works[<%= index %>][project]" placeholder="案件名を入力" required autocomplete="off" <%= 'disabled' if work.project_id.blank? %> value="<%= work.try(:project).try(:name) %>">
                                           <input type="hidden" class="project-id" name="works[<%= index %>][project_id]" value="<%= work.project_id %>">
                                           <div class="suggestions-dropdown project-suggestions"></div>
@@ -147,7 +142,7 @@
         // 顧客検索API
         async function searchClients(query) {
             try {
-                const response = await fetch(`http://localhost:3000/api/clients.json?company_id=${COMPANY_ID}&name=${encodeURIComponent(query)}`);
+                const response = await fetch(`/api/clients.json?company_id=${COMPANY_ID}&name=${encodeURIComponent(query)}`);
                 if (!response.ok) throw new Error('API request failed');
                 const data = await response.json();
                 return data.clients || [];
@@ -160,7 +155,7 @@
         // 案件検索API
         async function searchProjects(clientId, query = '') {
             try {
-                const response = await fetch(`http://localhost:3000/api/projects.json?client_id=${clientId}&name=${encodeURIComponent(query)}`);
+                const response = await fetch(`/api/projects.json?client_id=${clientId}&name=${encodeURIComponent(query)}`);
                 if (!response.ok) throw new Error('API request failed');
                 const data = await response.json();
                 return data.projects || [];
