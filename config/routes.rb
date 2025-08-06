@@ -20,6 +20,11 @@ Rails.application.routes.draw do
   # 日報を書く
   post "reports" => "daily_reports#create"
 
+  namespace :api do
+    resources :clients, only: [:index]
+    resources :projects, only: [:index]
+  end
+
   # 管理者
   namespace :admin do
     root "dashboard#index"
