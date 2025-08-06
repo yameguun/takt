@@ -96,7 +96,8 @@ ActiveRecord::Schema[8.0].define(version: 2025_08_06_060746) do
     t.bigint "daily_report_id", null: false
     t.bigint "client_id", null: false
     t.bigint "project_id", null: false
-    t.integer "work_times", default: 0, null: false
+    t.integer "hours", default: 0, null: false
+    t.text "description"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.index ["daily_report_id"], name: "index_daily_report_projects_on_daily_report_id"
@@ -105,7 +106,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_08_06_060746) do
   create_table "daily_reports", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
     t.bigint "user_id", null: false
     t.date "date", null: false
-    t.text "note"
+    t.text "content"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.index ["user_id"], name: "index_daily_reports_on_user_id"

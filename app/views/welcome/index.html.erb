@@ -29,158 +29,339 @@
 </div>
 
 <script>
-$(document).ready(function() {
-    let workIndex = 1;
+    $(document).ready(function() {
+        let workIndex = 1;
+        const COMPANY_ID = <%= current_user.company_id %>
 
-    // 今日の日付をデフォルトで設定
-    const today = new Date();
-    const formattedDate = today.getFullYear() + '-' +
-        String(today.getMonth() + 1).padStart(2, '0') + '-' +
-        String(today.getDate()).padStart(2, '0');
-    $('#reportDate').val(formattedDate);
-
-    // 作業追加ボタンのクリックイベント
-    $('#addWorkBtn').click(function() {
-        const workItem = createWorkItem(workIndex);
-        $('#workList').append(workItem);
-        workIndex++;
-        updateRemoveButtons();
-        calculateTotalHours();
-    });
-
-    // 作業削除ボタンのクリックイベント（イベント委譲）
-    $(document).on('click', '.remove-work-btn', function() {
-        $(this).closest('.work-item').remove();
-        updateRemoveButtons();
-        calculateTotalHours();
-    });
-
-    // 作業時間の変更イベント（イベント委譲）
-    $(document).on('input', 'input[name*="[hours]"]', function() {
-        calculateTotalHours();
-    });
-
-    // 作業アイテムを作成する関数
-    function createWorkItem(index) {
-        // --- 修正箇所 ---
-        return `
-            <div class="work-item" data-work-index="${index}">
-                <div class="row">
-                    <div class="col-sm-4">
-                        <div class="form-group">
-                            <label class="control-label">顧客名 <span class="text-danger">*</span></label>
-                            <input type="text" class="form-control" name="works[${index}][customer]" placeholder="顧客名を入力" required>
-                        </div>
-                    </div>
-                    <div class="col-sm-4">
-                        <div class="form-group">
-                            <label class="control-label">案件名 <span class="text-danger">*</span></label>
-                            <input type="text" class="form-control" name="works[${index}][project]" placeholder="案件名を入力" required>
-                        </div>
-                    </div>
-                    <div class="col-sm-3">
-                        <div class="form-group">
-                            <label class="control-label">作業時間 <span class="text-danger">*</span></label>
-                            <div class="input-group">
-                                <input type="number" class="form-control" name="works[${index}][hours]" placeholder="0.0" step="0.5" min="0" max="24" required>
-                                <span class="input-group-addon">分</span>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-sm-1">
-                        <div class="form-group" style="margin-top: 25px;">
-                            <button type="button" class="btn btn-danger btn-sm remove-work-btn">
-                                <i class="fa fa-trash"></i>
-                            </button>
-                        </div>
-                    </div>
-                </div>
-                <div class="row">
-                    <div class="col-sm-12">
-                        <div class="form-group">
-                            <label class="control-label">作業内容</label>
-                            <textarea class="form-control" name="works[${index}][description]" rows="2" placeholder="作業内容を入力（任意）"></textarea>
-                        </div>
-                    </div>
-                </div>
-                <hr class="hr-line-dashed">
-            </div>
-        `;
-        // --- 修正ここまで ---
-    }
-
-    // 削除ボタンの表示/非表示を更新
-    function updateRemoveButtons() {
-        const workItems = $('.work-item');
-        if (workItems.length === 1) {
-            workItems.find('.remove-work-btn').hide();
-        } else {
-            workItems.find('.remove-work-btn').show();
-        }
-    }
-
-    // 合計時間を計算
-    function calculateTotalHours() {
-        let total = 0;
-        $('input[name*="[hours]"]').each(function() {
-            const hours = parseFloat($(this).val()) || 0;
-            total += hours;
-        });
-        $('#totalHours').text(total.toFixed(1));
-    }
-
-    // フォーム送信時のバリデーション
-    $('#dailyReportForm').submit(function(e) {
-        // 合計作業時間のチェック
-        const totalHours = parseFloat($('#totalHours').text());
-        if (totalHours > 24) {
-            e.preventDefault();
-            alert('合計作業時間が24時間を超えています。確認してください。');
-            return false;
-        }
-
-        // 必須入力フィールドのチェック (作業アイテム内)
-        let invalidItem = false;
-        $('.work-item').each(function() {
-          const customer = $(this).find('input[name*="[customer]"]').val();
-          const project = $(this).find('input[name*="[project]"]').val();
-          const hours = $(this).find('input[name*="[hours]"]').val();
-
-          if (!customer || !project || !hours || parseFloat(hours) <= 0) {
-            invalidItem = true;
-          }
-        });
-
-        if (invalidItem) {
-          e.preventDefault();
-          alert('作業一覧の必須項目（顧客名、案件名、作業時間）を正しく入力してください。');
-          return false;
-        }
-    });
-
-    // 初期状態の設定
-    updateRemoveButtons();
-    calculateTotalHours();
-});
-
-// フォームリセット関数
-function resetForm() {
-    if (confirm('入力内容をリセットしますか？')) {
-        $('#dailyReportForm')[0].reset();
-
-        // 作業アイテムを最初の1つだけに戻す
-        $('.work-item:not(:first)').remove();
-
-        // 今日の日付を再設定
+        // 今日の日付をデフォルトで設定
         const today = new Date();
         const formattedDate = today.getFullYear() + '-' +
             String(today.getMonth() + 1).padStart(2, '0') + '-' +
             String(today.getDate()).padStart(2, '0');
         $('#reportDate').val(formattedDate);
 
-        // 削除ボタンと合計時間を更新
-        $('.remove-work-btn').hide();
-        $('#totalHours').text('0.0');
-    }
-}
-</script>
+        // 顧客検索API
+        async function searchClients(query) {
+            try {
+                const response = await fetch(`http://localhost:3000/api/clients.json?company_id=${COMPANY_ID}&name=${encodeURIComponent(query)}`);
+                if (!response.ok) throw new Error('API request failed');
+                const data = await response.json();
+                return data.clients || [];
+            } catch (error) {
+                console.error('顧客検索エラー:', error);
+                return [];
+            }
+        }
+
+        // 案件検索API
+        async function searchProjects(clientId, query = '') {
+            try {
+                const response = await fetch(`http://localhost:3000/api/projects.json?client_id=${clientId}&name=${encodeURIComponent(query)}`);
+                if (!response.ok) throw new Error('API request failed');
+                const data = await response.json();
+                return data.projects || [];
+            } catch (error) {
+                console.error('案件検索エラー:', error);
+                return [];
+            }
+        }
+
+        // サジェスト表示
+        function showSuggestions(input, suggestions, type) {
+            const dropdown = input.siblings('.suggestions-dropdown');
+            dropdown.empty().hide();
+
+            if (suggestions.length === 0) return;
+
+            suggestions.forEach(item => {
+                const div = $('<div class="suggestion-item"></div>')
+                    .text(item.name)
+                    .data('id', item.id)
+                    .data('name', item.name);
+                
+                div.click(function() {
+                    const id = $(this).data('id');
+                    const name = $(this).data('name');
+                    
+                    input.val(name);
+                    
+                    if (type === 'client') {
+                        input.siblings('.client-id').val(id);
+                        // 案件フィールドを有効化し、リセット
+                        const projectInput = input.closest('.work-item').find('.project-input');
+                        const projectIdInput = input.closest('.work-item').find('.project-id');
+                        projectInput.prop('disabled', false).val('');
+                        projectIdInput.val('');
+                        // 案件のサジェストも初期化
+                        loadProjectSuggestions(input.closest('.work-item'), id);
+                    } else if (type === 'project') {
+                        input.siblings('.project-id').val(id);
+                    }
+                    
+                    dropdown.hide();
+                });
+                
+                dropdown.append(div);
+            });
+
+            dropdown.show();
+        }
+
+        // 初期案件サジェスト読み込み
+        async function loadProjectSuggestions(workItem, clientId) {
+            const projectInput = workItem.find('.project-input');
+            try {
+                const projects = await searchProjects(clientId);
+                // 入力フィールドにフォーカスが当たったときのために保存
+                projectInput.data('allProjects', projects);
+            } catch (error) {
+                console.error('案件読み込みエラー:', error);
+            }
+        }
+
+        // 顧客入力フィールドのイベント
+        $(document).on('input', '.client-input', async function() {
+            const input = $(this);
+            const query = input.val().trim();
+            
+            // 顧客IDをリセット
+            input.siblings('.client-id').val('');
+            
+            // 案件フィールドを無効化してリセット
+            const workItem = input.closest('.work-item');
+            const projectInput = workItem.find('.project-input');
+            const projectIdInput = workItem.find('.project-id');
+            projectInput.prop('disabled', true).val('');
+            projectIdInput.val('');
+            workItem.find('.project-suggestions').hide();
+
+            if (query.length < 1) {
+                input.siblings('.client-suggestions').hide();
+                return;
+            }
+
+            input.addClass('loading');
+            try {
+                const clients = await searchClients(query);
+                showSuggestions(input, clients, 'client');
+            } finally {
+                input.removeClass('loading');
+            }
+        });
+
+        // 案件入力フィールドのイベント
+        $(document).on('input', '.project-input', async function() {
+            const input = $(this);
+            const query = input.val().trim();
+            const workItem = input.closest('.work-item');
+            const clientId = workItem.find('.client-id').val();
+            
+            // 案件IDをリセット
+            input.siblings('.project-id').val('');
+
+            if (!clientId) return;
+
+            if (query.length < 1) {
+                // クエリが空の場合は全案件を表示
+                const allProjects = input.data('allProjects') || [];
+                showSuggestions(input, allProjects, 'project');
+                return;
+            }
+
+            input.addClass('loading');
+            try {
+                const projects = await searchProjects(clientId, query);
+                showSuggestions(input, projects, 'project');
+            } finally {
+                input.removeClass('loading');
+            }
+        });
+
+        // フォーカスイベント（案件フィールドに全案件を表示）
+        $(document).on('focus', '.project-input', async function() {
+            const input = $(this);
+            const workItem = input.closest('.work-item');
+            const clientId = workItem.find('.client-id').val();
+            
+            if (!clientId) return;
+
+            if (input.val().trim() === '') {
+                const allProjects = input.data('allProjects');
+                if (allProjects && allProjects.length > 0) {
+                    showSuggestions(input, allProjects, 'project');
+                } else {
+                    // 初回の場合は API から取得
+                    try {
+                        const projects = await searchProjects(clientId);
+                        input.data('allProjects', projects);
+                        showSuggestions(input, projects, 'project');
+                    } catch (error) {
+                        console.error('案件読み込みエラー:', error);
+                    }
+                }
+            }
+        });
+
+        // ドキュメントクリックでサジェストを隠す
+        $(document).on('click', function(e) {
+            if (!$(e.target).closest('.form-group').length) {
+                $('.suggestions-dropdown').hide();
+            }
+        });
+
+        // 作業追加ボタンのクリックイベント
+        $('#addWorkBtn').click(function() {
+            const workItem = createWorkItem(workIndex);
+            $('#workList').append(workItem);
+            workIndex++;
+            updateRemoveButtons();
+            calculateTotalHours();
+        });
+
+        // 作業削除ボタンのクリックイベント（イベント委譲）
+        $(document).on('click', '.remove-work-btn', function() {
+            $(this).closest('.work-item').remove();
+            updateRemoveButtons();
+            calculateTotalHours();
+        });
+
+        // 作業時間の変更イベント（イベント委譲）
+        $(document).on('input', 'input[name*="[hours]"]', function() {
+            calculateTotalHours();
+        });
+
+        // 作業アイテムを作成する関数
+        function createWorkItem(index) {
+            return `
+                <div class="work-item" data-work-index="${index}">
+                    <div class="row">
+                        <div class="col-sm-4">
+                            <div class="form-group">
+                                <label class="control-label">顧客名 <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control client-input" name="works[${index}][customer]" placeholder="顧客名を入力" required autocomplete="off">
+                                <input type="hidden" class="client-id" name="works[${index}][client_id]" value="">
+                                <div class="suggestions-dropdown client-suggestions"></div>
+                            </div>
+                        </div>
+                        <div class="col-sm-4">
+                            <div class="form-group">
+                                <label class="control-label">案件名 <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control project-input" name="works[${index}][project]" placeholder="案件名を入力" required autocomplete="off" disabled>
+                                <input type="hidden" class="project-id" name="works[${index}][project_id]" value="">
+                                <div class="suggestions-dropdown project-suggestions"></div>
+                            </div>
+                        </div>
+                        <div class="col-sm-3">
+                            <div class="form-group">
+                                <label class="control-label">作業時間 <span class="text-danger">*</span></label>
+                                <div class="input-group">
+                                    <input type="number" class="form-control" name="works[${index}][hours]" placeholder="0" step="1" min="0" max="1440" required>
+                                    <span class="input-group-addon">分</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-sm-1">
+                            <div class="form-group" style="margin-top: 25px;">
+                                <button type="button" class="btn btn-danger btn-sm remove-work-btn">
+                                    <i class="fa fa-trash"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-sm-12">
+                            <div class="form-group">
+                                <label class="control-label">作業内容</label>
+                                <textarea class="form-control" name="works[${index}][description]" rows="2" placeholder="作業内容を入力（任意）"></textarea>
+                            </div>
+                        </div>
+                    </div>
+                    <hr class="hr-line-dashed">
+                </div>
+            `;
+        }
+
+        // 削除ボタンの表示/非表示を更新
+        function updateRemoveButtons() {
+            const workItems = $('.work-item');
+            if (workItems.length === 1) {
+                workItems.find('.remove-work-btn').hide();
+            } else {
+                workItems.find('.remove-work-btn').show();
+            }
+        }
+
+        // 合計時間を計算
+        function calculateTotalHours() {
+            let total = 0;
+            $('input[name*="[hours]"]').each(function() {
+                const hours = parseFloat($(this).val()) || 0;
+                total += hours;
+            });
+            $('#totalHours').text(total.toFixed(1));
+        }
+
+        // フォーム送信時のバリデーション
+        $('#dailyReportForm').submit(function(e) {
+            // 合計作業時間のチェック
+            const totalHours = parseFloat($('#totalHours').text());
+            if (totalHours > 1440) {
+                e.preventDefault();
+                alert('合計作業時間が24時間を超えています。確認してください。');
+                return false;
+            }
+
+            // 必須入力フィールドのチェック (作業アイテム内)
+            let invalidItem = false;
+            $('.work-item').each(function() {
+                const customer = $(this).find('input[name*="[customer]"]').val();
+                const project = $(this).find('input[name*="[project]"]').val();
+                const hours = $(this).find('input[name*="[hours]"]').val();
+                const clientId = $(this).find('.client-id').val();
+                const projectId = $(this).find('.project-id').val();
+
+                if (!customer || !project || !hours || parseFloat(hours) <= 0 || !clientId || !projectId) {
+                    invalidItem = true;
+                }
+            });
+
+            if (invalidItem) {
+                e.preventDefault();
+                alert('作業一覧の必須項目（顧客名、案件名、作業時間）を正しく選択してください。');
+                return false;
+            }
+        });
+
+        // 初期状態の設定
+        updateRemoveButtons();
+        calculateTotalHours();
+
+        // グローバル関数として定義
+        window.resetForm = function() {
+            if (confirm('入力内容をリセットしますか？')) {
+                $('#dailyReportForm')[0].reset();
+
+                // 作業アイテムを最初の1つだけに戻す
+                $('.work-item:not(:first)').remove();
+
+                // hiddenフィールドもリセット
+                $('.client-id, .project-id').val('');
+                $('.project-input').prop('disabled', true);
+
+                // 今日の日付を再設定
+                const today = new Date();
+                const formattedDate = today.getFullYear() + '-' +
+                    String(today.getMonth() + 1).padStart(2, '0') + '-' +
+                    String(today.getDate()).padStart(2, '0');
+                $('#reportDate').val(formattedDate);
+
+                // 削除ボタンと合計時間を更新
+                $('.remove-work-btn').hide();
+                $('#totalHours').text('0.0');
+
+                // サジェスト非表示
+                $('.suggestions-dropdown').hide();
+            }
+        };
+    });
+    </script>

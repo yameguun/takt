@@ -4,7 +4,8 @@ class CreateDailyReportProjects < ActiveRecord::Migration[8.0]
       t.bigint :daily_report_id, null: false
       t.bigint :client_id, null: false
       t.bigint :project_id, null: false
-      t.integer :work_times, null: false, default: 0
+      t.integer :hours, null: false, default: 0
+      t.text :description
 
       t.timestamps
     end

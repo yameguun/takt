@@ -3,5 +3,6 @@ class Api::ClientsController < ApplicationController
 
   def index
     @clients = Client.where(company_id: params[:company_id])
+    @clients = @clients.where("name LIKE ?", "%#{params[:name]}%") if params[:name].present?
   end
 end

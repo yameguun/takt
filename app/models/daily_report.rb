@@ -3,8 +3,8 @@
 # Table name: daily_reports
 #
 #  id         :bigint           not null, primary key
+#  content    :text(65535)
 #  date       :date             not null
-#  note       :text(65535)
 #  created_at :datetime         not null
 #  updated_at :datetime         not null
 #  user_id    :bigint           not null
@@ -19,7 +19,9 @@
 #
 class DailyReport < ApplicationRecord
   belongs_to :user
-  has_many :daily_report_projects, dependent: :destroy
+  has_many :daily_report_projects, inverse_of: :daily_report, dependent: :destroy
+
+  accepts_nested_attributes_for :daily_report_projects
 
   validates :date, presence: true
 end
