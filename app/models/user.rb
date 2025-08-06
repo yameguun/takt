@@ -4,6 +4,7 @@
 #
 #  id              :integer          not null, primary key
 #  company_id      :integer          not null
+#  department_id   :integer
 #  email           :string(255)      not null
 #  password_digest :string(255)
 #  name            :string(255)

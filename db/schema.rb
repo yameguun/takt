@@ -87,11 +87,11 @@ ActiveRecord::Schema[8.0].define(version: 2025_08_06_010018) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.index ["company_id"], name: "index_departments_on_company_id"
-    t.index ["name"], name: "index_departments_on_name", unique: true
   end
 
   create_table "users", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
     t.bigint "company_id", null: false
+    t.integer "department_id"
     t.string "email", null: false
     t.string "password_digest"
     t.string "name"

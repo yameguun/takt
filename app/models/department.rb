@@ -11,7 +11,6 @@
 # Indexes
 #
 #  index_departments_on_company_id  (company_id)
-#  index_departments_on_name        (name) UNIQUE
 #
 
 class Department < ApplicationRecord
