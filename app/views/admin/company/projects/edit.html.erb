@@ -1,0 +1,41 @@
+<div id="wrapper">
+  <%= render '/admin/shared/header' %>
+  <div id="page-wrapper" class="gray-bg dashbard-1">
+    <%= render '/admin/shared/navbar' %>
+    <div class="row wrapper border-bottom white-bg page-heading">
+      <div class="col-lg-10">
+        <h2><%= @project.name %></h2>
+        <ol class="breadcrumb">
+          <li>
+            <a href="/admin">ダッシュボード</a>
+          </li>
+          <li>
+            <%= link_to @company.name, admin_companies_path %>
+          </li>
+          <li>
+            <%= link_to @client.name, admin_company_clients_path(@company) %>
+          </li>
+          <li>
+            <%= link_to '案件一覧', admin_company_client_projects_path(@company, @client) %>
+          </li>
+          <li>
+            <strong><%= @project.name %></strong>
+          </li>
+        </ol>
+      </div>
+    </div>
+
+    <div class="wrapper wrapper-content">
+      <div class="row">
+        <div class="col-lg-6">
+          <div class="ibox float-e-margins">
+            <div class="ibox-content">
+              <%= render 'form' %>
+            </div>
+          </div>
+        </div>
+      </div>
+      <%= render '/admin/shared/footer' %>
+    </div>
+  </div>
+</div>

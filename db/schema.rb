@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_08_06_041624) do
+ActiveRecord::Schema[8.0].define(version: 2025_08_06_050119) do
   create_table "action_mailbox_inbound_emails", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
     t.integer "status", default: 0, null: false
     t.string "message_id", null: false
@@ -100,6 +100,16 @@ ActiveRecord::Schema[8.0].define(version: 2025_08_06_041624) do
     t.index ["company_id"], name: "index_departments_on_company_id"
   end
 
+  create_table "projects", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
+    t.bigint "client_id", null: false
+    t.string "name", null: false
+    t.text "description"
+    t.integer "sales", default: 0, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["client_id"], name: "index_projects_on_client_id"
+  end
+
   create_table "users", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
     t.bigint "company_id", null: false
     t.integer "department_id"
@@ -118,5 +128,6 @@ ActiveRecord::Schema[8.0].define(version: 2025_08_06_041624) do
   add_foreign_key "authentications", "users"
   add_foreign_key "clients", "companies"
   add_foreign_key "departments", "companies"
+  add_foreign_key "projects", "clients"
   add_foreign_key "users", "companies"
 end

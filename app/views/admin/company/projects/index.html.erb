@@ -4,7 +4,7 @@
     <%= render '/admin/shared/navbar' %>
     <div class="row wrapper border-bottom white-bg page-heading">
       <div class="col-lg-10">
-        <h2>取引先一覧</h2>
+        <h2>案件一覧</h2>
         <ol class="breadcrumb">
           <li>
             <a href="/admin">Home</a>
@@ -12,8 +12,11 @@
           <li>
             <%= link_to @company.name, admin_companies_path %>
           </li>
+          <li>
+            <%= link_to @client.name, admin_company_clients_path(@company) %>
+          </li>
           <li class="active">
-            <strong>取引先一覧</strong>
+            <strong>案件一覧</strong>
           </li>
         </ol>
       </div>
@@ -24,7 +27,7 @@
         <div class="col-lg-12">
           <div class="ibox float-e-margins">
             <div class="ibox-title" style="text-align: right;">
-              <%= link_to "新規登録", new_admin_company_client_path(@company), class: 'btn btn-primary' %>
+              <%= link_to "案件登録", new_admin_company_client_project_path(@company, @client), class: 'btn btn-primary btn-sm' %>
             </div>
             <div class="ibox-content">
               <table class="table table-bordered">
@@ -32,30 +35,27 @@
                   <tr>
                     <th>ID</th>
                     <th>取引先</th>
-                    <th>住所</th>
-                    <th>電話番号</th>
+                    <th>案件名</th>
+                    <th>売上</th>
                     <th></th>
                   </tr>
                 </thead>
                 <tbody>
-                  <% @clients.each do |client| %>
+                  <% @projects.each do |project| %>
                     <tr>
-                      <td><%= client.id %></td>
-                      <td><%= client.name %></td>
-                      <td><%= client.address %></td>
-                      <td><%= client.phone %></td>
+                      <td><%= project.id %></td>
+                      <td><%= @client.name %></td>
+                      <td><%= project.name %></td>
+                      <td><%= project.sales %></td>
                       <td>
-                        <%= link_to '修正', edit_admin_company_client_path(@company,client), class: 'btn btn-primary btn-sm' %>
-                        <%= link_to '削除', admin_company_client_path(@company,client), class: 'btn btn-danger btn-sm', data: { turbo_method: :delete, turbo_confirm: '削除しますか？' } %>
-                        <%= link_to admin_company_client_projects_path(@company,client), class: 'btn btn-info btn-sm' do %>
-                          <i class="fa fa-building-o"></i> 案件
-                        <% end %>
+                        <%= link_to '修正', edit_admin_company_client_project_path(@company, @client, project), class: 'btn btn-primary btn-sm' %>
+                        <%= link_to '削除', admin_company_client_project_path(@company, @client, project), class: 'btn btn-danger btn-sm', data: { turbo_method: :delete, turbo_confirm: '削除しますか？' } %>
                       </td>
                     </tr>
                   <% end %>
                 </tbody>
               </table>
-              <%= paginate @clients, theme: 'admin' %>
+              <%= paginate @projects, theme: 'admin' %>
             </div>
           </div>
         </div>

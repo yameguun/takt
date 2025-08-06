@@ -28,6 +28,7 @@ Rails.application.routes.draw do
         resources :users, except: [:new, :create, :show]
         resources :departments, except: [:show]
         resources :clients, except: [:show] do
+          resources :projects, except: [:show]
         end
       end
     end
