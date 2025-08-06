@@ -17,6 +17,9 @@ Rails.application.routes.draw do
   post "login" => "sessions#create"
   delete "logout" => "sessions#destroy"
 
+  # 日報を書く
+  post "reports" => "daily_reports#create"
+
   # 管理者
   namespace :admin do
     root "dashboard#index"

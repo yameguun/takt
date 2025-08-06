@@ -25,9 +25,12 @@
 class User < ApplicationRecord
   has_secure_password
 
-  has_one :authentication, dependent: :destroy
   belongs_to :company
   belongs_to :department, optional: true
+
+  has_one :authentication, dependent: :destroy
+  
+  has_many :daily_reports, dependent: :destroy
 
   validates :email, presence: true, uniqueness: true, format: { with: URI::MailTo::EMAIL_REGEXP }
   validates :unit_price, presence: true, numericality: true

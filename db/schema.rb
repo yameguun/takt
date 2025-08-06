@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_08_06_050119) do
+ActiveRecord::Schema[8.0].define(version: 2025_08_06_060746) do
   create_table "action_mailbox_inbound_emails", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
     t.integer "status", default: 0, null: false
     t.string "message_id", null: false
@@ -92,6 +92,25 @@ ActiveRecord::Schema[8.0].define(version: 2025_08_06_050119) do
     t.datetime "updated_at", null: false
   end
 
+  create_table "daily_report_projects", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
+    t.bigint "daily_report_id", null: false
+    t.bigint "client_id", null: false
+    t.bigint "project_id", null: false
+    t.integer "work_times", default: 0, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["daily_report_id"], name: "index_daily_report_projects_on_daily_report_id"
+  end
+
+  create_table "daily_reports", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
+    t.bigint "user_id", null: false
+    t.date "date", null: false
+    t.text "note"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["user_id"], name: "index_daily_reports_on_user_id"
+  end
+
   create_table "departments", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
     t.bigint "company_id", null: false
     t.string "name", null: false
@@ -127,6 +146,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_08_06_050119) do
   add_foreign_key "active_storage_variant_records", "active_storage_blobs", column: "blob_id"
   add_foreign_key "authentications", "users"
   add_foreign_key "clients", "companies"
+  add_foreign_key "daily_reports", "users"
   add_foreign_key "departments", "companies"
   add_foreign_key "projects", "clients"
   add_foreign_key "users", "companies"

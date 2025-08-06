@@ -1,20 +1,186 @@
-<% provide(:title, "ダッシュボード") %>
+<% provide(:title, "日報") %>
 <div id="wrapper">
   <%= render 'shared/header' %>
   <div id="page-wrapper" class="gray-bg dashbard-1">
     <%= render 'shared/navbar' %>
     <div class="row wrapper border-bottom white-bg page-heading">
       <div class="col-lg-10">
-        <h2>ダッシュボード</h2>
+        <h2>日報</h2>
         <ol class="breadcrumb">
           <li>
-            <a href="/admin">ダッシュボード</a>
+            <a href="/admin">日報を書く</a>
           </li>
         </ol>
       </div>
     </div>
     <div class="wrapper wrapper-content">
+      <div class="row">
+        <div class="col-lg-12">
+          <div class="ibox float-e-margins">
+            <div class="ibox-content">
+              <%= render 'form' %>
+            </div>
+          </div>
+        </div>
+      </div>
       <%= render 'shared/footer' %>
     </div>
   </div>
 </div>
+
+<script>
+$(document).ready(function() {
+    let workIndex = 1;
+
+    // 今日の日付をデフォルトで設定
+    const today = new Date();
+    const formattedDate = today.getFullYear() + '-' +
+        String(today.getMonth() + 1).padStart(2, '0') + '-' +
+        String(today.getDate()).padStart(2, '0');
+    $('#reportDate').val(formattedDate);
+
+    // 作業追加ボタンのクリックイベント
+    $('#addWorkBtn').click(function() {
+        const workItem = createWorkItem(workIndex);
+        $('#workList').append(workItem);
+        workIndex++;
+        updateRemoveButtons();
+        calculateTotalHours();
+    });
+
+    // 作業削除ボタンのクリックイベント（イベント委譲）
+    $(document).on('click', '.remove-work-btn', function() {
+        $(this).closest('.work-item').remove();
+        updateRemoveButtons();
+        calculateTotalHours();
+    });
+
+    // 作業時間の変更イベント（イベント委譲）
+    $(document).on('input', 'input[name*="[hours]"]', function() {
+        calculateTotalHours();
+    });
+
+    // 作業アイテムを作成する関数
+    function createWorkItem(index) {
+        // --- 修正箇所 ---
+        return `
+            <div class="work-item" data-work-index="${index}">
+                <div class="row">
+                    <div class="col-sm-4">
+                        <div class="form-group">
+                            <label class="control-label">顧客名 <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" name="works[${index}][customer]" placeholder="顧客名を入力" required>
+                        </div>
+                    </div>
+                    <div class="col-sm-4">
+                        <div class="form-group">
+                            <label class="control-label">案件名 <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" name="works[${index}][project]" placeholder="案件名を入力" required>
+                        </div>
+                    </div>
+                    <div class="col-sm-3">
+                        <div class="form-group">
+                            <label class="control-label">作業時間 <span class="text-danger">*</span></label>
+                            <div class="input-group">
+                                <input type="number" class="form-control" name="works[${index}][hours]" placeholder="0.0" step="0.5" min="0" max="24" required>
+                                <span class="input-group-addon">分</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-sm-1">
+                        <div class="form-group" style="margin-top: 25px;">
+                            <button type="button" class="btn btn-danger btn-sm remove-work-btn">
+                                <i class="fa fa-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-sm-12">
+                        <div class="form-group">
+                            <label class="control-label">作業内容</label>
+                            <textarea class="form-control" name="works[${index}][description]" rows="2" placeholder="作業内容を入力（任意）"></textarea>
+                        </div>
+                    </div>
+                </div>
+                <hr class="hr-line-dashed">
+            </div>
+        `;
+        // --- 修正ここまで ---
+    }
+
+    // 削除ボタンの表示/非表示を更新
+    function updateRemoveButtons() {
+        const workItems = $('.work-item');
+        if (workItems.length === 1) {
+            workItems.find('.remove-work-btn').hide();
+        } else {
+            workItems.find('.remove-work-btn').show();
+        }
+    }
+
+    // 合計時間を計算
+    function calculateTotalHours() {
+        let total = 0;
+        $('input[name*="[hours]"]').each(function() {
+            const hours = parseFloat($(this).val()) || 0;
+            total += hours;
+        });
+        $('#totalHours').text(total.toFixed(1));
+    }
+
+    // フォーム送信時のバリデーション
+    $('#dailyReportForm').submit(function(e) {
+        // 合計作業時間のチェック
+        const totalHours = parseFloat($('#totalHours').text());
+        if (totalHours > 24) {
+            e.preventDefault();
+            alert('合計作業時間が24時間を超えています。確認してください。');
+            return false;
+        }
+
+        // 必須入力フィールドのチェック (作業アイテム内)
+        let invalidItem = false;
+        $('.work-item').each(function() {
+          const customer = $(this).find('input[name*="[customer]"]').val();
+          const project = $(this).find('input[name*="[project]"]').val();
+          const hours = $(this).find('input[name*="[hours]"]').val();
+
+          if (!customer || !project || !hours || parseFloat(hours) <= 0) {
+            invalidItem = true;
+          }
+        });
+
+        if (invalidItem) {
+          e.preventDefault();
+          alert('作業一覧の必須項目（顧客名、案件名、作業時間）を正しく入力してください。');
+          return false;
+        }
+    });
+
+    // 初期状態の設定
+    updateRemoveButtons();
+    calculateTotalHours();
+});
+
+// フォームリセット関数
+function resetForm() {
+    if (confirm('入力内容をリセットしますか？')) {
+        $('#dailyReportForm')[0].reset();
+
+        // 作業アイテムを最初の1つだけに戻す
+        $('.work-item:not(:first)').remove();
+
+        // 今日の日付を再設定
+        const today = new Date();
+        const formattedDate = today.getFullYear() + '-' +
+            String(today.getMonth() + 1).padStart(2, '0') + '-' +
+            String(today.getDate()).padStart(2, '0');
+        $('#reportDate').val(formattedDate);
+
+        // 削除ボタンと合計時間を更新
+        $('.remove-work-btn').hide();
+        $('#totalHours').text('0.0');
+    }
+}
+</script>
