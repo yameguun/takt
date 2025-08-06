@@ -6,6 +6,7 @@ class CreateUsers < ActiveRecord::Migration[8.0]
       t.string :email, null: false
       t.string :password_digest
       t.string :name
+      t.integer :unit_price, null: false, default: 0
 
       t.timestamps
     end

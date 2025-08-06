@@ -26,7 +26,7 @@ class Admin::Company::DepartmentsController < Admin::ApplicationController
 
   def update
     if @department.update(set_department)
-      redirect_to admin_company_departments_path(@company), flash: {success: "登録しました"}
+      redirect_to admin_company_departments_path(@company), flash: {success: "更新しました"}
     else
       flash.now[:alert] = '入力内容に誤りがあります。'
       render :edit, status: :unprocessable_entity

@@ -1,0 +1,32 @@
+<%= form_for @user, url: admin_company_user_path(@company,@user) , html: {class: 'form-horizontal'} do |f| %>
+
+  <div class="form-group">
+    <label class="col-sm-2 control-label">会社名</label>
+    <div class="col-sm-10">
+      <%= f.select :company_id, Company.all.map{|o| [o.name, o.id]}, {}, {class: 'form-control'} %>
+    </div>
+  </div>
+
+  <div class="form-group">
+    <label class="col-sm-2 control-label">部署</label>
+    <div class="col-sm-10">
+      <%= f.select :department_id, @company.departments.map{|o| [o.name, o.id]}, {}, {class: 'form-control'} %>
+    </div>
+  </div>
+  
+  <div class="form-group">
+    <label class="col-sm-2 control-label">氏名</label>
+    <div class="col-sm-10">
+      <%= f.text_field :name, class: 'form-control', placeholder: '三角太郎' %>
+      <% if f.object.errors.include?(:name) %>
+      <p style="color: red;"><%= f.object.errors.full_messages_for(:name).first %>
+      <% end %>
+    </div>
+  </div>
+  <div class="hr-line-dashed"></div>
+  <div class="form-group">
+    <div class="col-sm-4 col-sm-offset-2">
+      <button class="btn btn-primary" type="submit"><%= @user.new_record?? "登録する" : "更新する"%></button>
+    </div>
+  </div>
+<% end %>

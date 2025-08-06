@@ -22,6 +22,7 @@ class User < ApplicationRecord
 
   has_one :authentication, dependent: :destroy
   belongs_to :company
+  belongs_to :department
 
   validates :email, presence: true, uniqueness: true, format: { with: URI::MailTo::EMAIL_REGEXP }
 end
