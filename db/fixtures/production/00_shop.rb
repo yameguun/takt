@@ -1,0 +1,1 @@
+Shop.create(name: "株式会社森尾園", domain: "morioen", liff_id: "2007826685-Kd5Lem2O", contract_id: "sfs761z1", client_id: "f2621fac45927e967614654bb5d03237")

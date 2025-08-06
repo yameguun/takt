@@ -1,0 +1,1 @@
+Company.create(name: 'サンカクキカク株式会社')

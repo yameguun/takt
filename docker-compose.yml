@@ -1,0 +1,45 @@
+services:
+  db:
+    platform: linux/x86_64
+    image: mysql:8.0
+    command: --default-authentication-plugin=mysql_native_password
+    volumes:
+      - mysql-data:/var/lib/mysql
+      # ★追加: 作成した初期化スクリプトをマウントする
+      - ./docker/mysql:/docker-entrypoint-initdb.d
+    environment:
+      MYSQL_ROOT_PASSWORD: password
+      MYSQL_DATABASE: takt_development
+      MYSQL_USER: user
+      MYSQL_PASSWORD: password
+    ports:
+      - '3306:3306'
+    # ★追加: DBが正常に応答するかチェックする
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p$$MYSQL_ROOT_PASSWORD"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  web:
+    build: .
+    platform: linux/x86_64
+    # ★削除: このコマンドはentrypoint.shに移動するため不要
+    # command: bash -c "rm -f tmp/pids/server.pid && bundle exec rails s -p 3000 -b '0.0.0.0'"
+    volumes:
+      - .:/myapp
+    ports:
+      - "3000:3000"
+    depends_on:
+      # ★変更: dbコンテナのhealthcheckが成功するまで待つ
+      db:
+        condition: service_healthy
+    environment:
+      RAILS_ENV: development
+      DB_HOST: db
+      DB_USERNAME: user
+      DB_PASSWORD: password
+      RAILS_LOG_TO_STDOUT: "true"
+
+volumes:
+  mysql-data:
