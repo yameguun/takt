@@ -70,7 +70,25 @@
     <%= javascript_importmap_tags %>
   </head>
 
-  <body>
+  <body class="<%= 'gray-bg' if active_flag('sessions') %>">
     <%= yield %>
+
+    <script>
+    <% flash.each do |type, message| %>
+    <% if type == "success" || type == "error" %>
+    $(document).ready(function() {
+      setTimeout(function() {
+        toastr.options = {
+          closeButton: true,
+          progressBar: true,
+          showMethod: 'slideDown',
+          timeOut: 3000
+        };
+        toastr.<%= type %>('<%= message %>');
+      }, 1300);
+    });
+    <% end %>
+    <% end %>
+    </script>
   </body>
 </html>
