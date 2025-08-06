@@ -70,7 +70,6 @@ ActiveRecord::Schema[8.0].define(version: 2025_07_30_043720) do
     t.bigint "user_id", null: false
     t.string "provider"
     t.string "uid"
-    t.string "name"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.index ["user_id"], name: "index_authentications_on_user_id"
@@ -85,6 +84,8 @@ ActiveRecord::Schema[8.0].define(version: 2025_07_30_043720) do
   create_table "users", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
     t.bigint "company_id", null: false
     t.string "email", null: false
+    t.string "password_digest"
+    t.string "name"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.index ["company_id"], name: "index_users_on_company_id"

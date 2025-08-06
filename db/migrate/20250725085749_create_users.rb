@@ -3,6 +3,9 @@ class CreateUsers < ActiveRecord::Migration[8.0]
     create_table :users do |t|
       t.references :company, null: false, foreign_key: true
       t.string :email, null: false
+      t.string :password_digest
+      t.string :name
+
       t.timestamps
     end
 

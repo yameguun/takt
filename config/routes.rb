@@ -19,5 +19,10 @@ Rails.application.routes.draw do
     get "login" => "sessions#new"
     post "login" => "sessions#create"
     delete "logout" => "sessions#destroy"
+    scope module: :company do
+      resources :companies, except: [:show] do
+        resources :users, except: [:new, :create, :show]
+      end
+    end
   end
 end
