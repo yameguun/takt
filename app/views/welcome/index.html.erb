@@ -139,6 +139,16 @@
         let workIndex = $('.work-item').length;
         const COMPANY_ID = <%= current_user.company_id %>
 
+				$('#reportDate').on('change', function() {
+            const selectedDate = $(this).val();
+            if (selectedDate) {
+                // 現在のページのパスを取得
+                const currentPath = window.location.pathname;
+                // 新しいURLに遷移
+                window.location.href = `${currentPath}?report_date=${selectedDate}`;
+            }
+        });
+
         // 顧客検索API
         async function searchClients(query) {
             try {
