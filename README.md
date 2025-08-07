@@ -6,4 +6,5 @@
 
 ```bash
 ssh debian@116.80.47.35
+sudo systemctl restart puma.service
 ```
