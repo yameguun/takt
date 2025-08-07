@@ -19,6 +19,7 @@ class DailyReportsController < BaseController
       end
     end
 
+    redirect_to root_path(report_date: @write_date), flash: {success: "登録しました"}
   rescue ActiveRecord::RecordInvalid => e
     flash.now[:danger] = e.record.errors.full_messages.join(", ")
     render :create, status: :unprocessable_entity
