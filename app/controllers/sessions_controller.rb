@@ -18,7 +18,7 @@ class SessionsController < ApplicationController
   end
 
   def destroy
-    session.delete(:user_id)
+    log_out
     flash.now[:success] = "ログアウトしました"
     redirect_to login_path
   end

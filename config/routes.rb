@@ -1,4 +1,6 @@
 Rails.application.routes.draw do
+  get "slack_authentications/new"
+  get "slack_authentications/create"
 
   # Define your application routes per the DSL in https://guides.rubyonrails.org/routing.html
 
@@ -16,6 +18,9 @@ Rails.application.routes.draw do
   get "login" => "sessions#new"
   post "login" => "sessions#create"
   delete "logout" => "sessions#destroy"
+
+  get 'auth/slack', to: 'slack_authentications#new', as: 'slack_login'
+  get 'auth/slack/callback', to: 'slack_authentications#create'
 
   # 日報を書く
   post "reports" => "daily_reports#create"
