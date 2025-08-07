@@ -1,26 +1,483 @@
 <% provide(:title, "ログイン") %>
-<div class="middle-box text-center loginscreen animated fadeInDown">
-  <div>
-    <h1 class="logo-name" style="font-size: 40px; letter-spacing: 0px;">Takt.</h1>
+<style>
+  /* ログインページ専用スタイル */
+  body.login-page {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Open Sans', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    margin: 0;
+    padding: 20px;
+  }
+
+  .login-container {
+    width: 100%;
+    max-width: 420px;
+    margin: 0 auto;
+  }
+
+  .login-card {
+    background: white;
+    border-radius: 20px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    overflow: hidden;
+    animation: slideInUp 0.6s ease-out;
+  }
+
+  @keyframes slideInUp {
+    from {
+      opacity: 0;
+      transform: translateY(30px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .login-header {
+    background: linear-gradient(135deg, #1ab394 0%, #18a689 100%);
+    padding: 40px 30px;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .login-header::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    right: -50%;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+    animation: shimmer 3s infinite;
+  }
+
+  @keyframes shimmer {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+
+  .logo-container {
+    position: relative;
+    z-index: 1;
+  }
+
+  .logo-icon {
+    width: 80px;
+    height: 80px;
+    background: white;
+    border-radius: 50%;
+    margin: 0 auto 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+    animation: pulse 2s infinite;
+  }
+
+  @keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+    100% { transform: scale(1); }
+  }
+
+  .logo-text {
+    color: #1ab394;
+    font-size: 36px;
+    font-weight: 700;
+    letter-spacing: -1px;
+  }
+
+  .app-name {
+    color: white;
+    font-size: 32px;
+    font-weight: 300;
+    margin: 0;
+    letter-spacing: 2px;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  }
+
+  .app-tagline {
+    color: rgba(255, 255, 255, 0.9);
+    font-size: 14px;
+    margin-top: 5px;
+    font-weight: 300;
+  }
+
+  .login-body {
+    padding: 40px 30px;
+  }
+
+  .welcome-text {
+    text-align: center;
+    margin-bottom: 30px;
+  }
+
+  .welcome-text h3 {
+    color: #2c3e50;
+    font-size: 20px;
+    font-weight: 400;
+    margin: 0 0 10px 0;
+  }
+
+  .welcome-text p {
+    color: #95a5a6;
+    font-size: 14px;
+    margin: 0;
+  }
+
+  .slack-login-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    padding: 14px 20px;
+    background: #4A154B;
+    color: white;
+    border: none;
+    border-radius: 10px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-decoration: none;
+    margin-bottom: 20px;
+    box-shadow: 0 4px 15px rgba(74, 21, 75, 0.2);
+  }
+
+  .slack-login-btn:hover {
+    background: #611f69;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(74, 21, 75, 0.3);
+    color: white;
+    text-decoration: none;
+  }
+
+  .slack-login-btn:active {
+    transform: translateY(0);
+  }
+
+  .slack-icon {
+    width: 24px;
+    height: 24px;
+    margin-right: 10px;
+  }
+
+  .divider {
+    text-align: center;
+    margin: 25px 0;
+    position: relative;
+  }
+
+  .divider::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: #e0e0e0;
+  }
+
+  .divider span {
+    background: white;
+    padding: 0 15px;
+    color: #95a5a6;
+    font-size: 13px;
+    position: relative;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+
+  .form-group {
+    margin-bottom: 20px;
+    position: relative;
+  }
+
+  .form-control {
+    width: 100%;
+    padding: 12px 15px 12px 45px;
+    border: 2px solid #e0e0e0;
+    border-radius: 10px;
+    font-size: 15px;
+    transition: all 0.3s ease;
+    background: #f8f9fa;
+    box-sizing: border-box;
+  }
+
+  .form-control:focus {
+    outline: none;
+    border-color: #1ab394;
+    background: white;
+    box-shadow: 0 0 0 3px rgba(26, 179, 148, 0.1);
+  }
+
+  .form-control::placeholder {
+    color: #adb5bd;
+  }
+
+  .input-icon {
+    position: absolute;
+    left: 15px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #adb5bd;
+    font-size: 18px;
+    transition: color 0.3s ease;
+    pointer-events: none;
+  }
+
+  .form-control:focus ~ .input-icon {
+    color: #1ab394;
+  }
+
+  .login-btn {
+    width: 100%;
+    padding: 14px 20px;
+    background: linear-gradient(135deg, #1ab394 0%, #18a689 100%);
+    color: white;
+    border: none;
+    border-radius: 10px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(26, 179, 148, 0.3);
+  }
+
+  .login-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(26, 179, 148, 0.4);
+  }
+
+  .login-btn:active {
+    transform: translateY(0);
+  }
+
+  .login-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+
+  .dev-login-section {
+    background: #f8f9fa;
+    border-radius: 10px;
+    padding: 20px;
+    margin-top: 20px;
+  }
+
+  .dev-badge {
+    display: inline-block;
+    background: #ffc107;
+    color: #000;
+    padding: 4px 10px;
+    border-radius: 5px;
+    font-size: 11px;
+    font-weight: 600;
+    margin-bottom: 15px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .error-message {
+    background: #fee;
+    border: 1px solid #fcc;
+    color: #c33;
+    padding: 10px 15px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    font-size: 14px;
+    animation: shake 0.5s;
+  }
+
+  @keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-10px); }
+    75% { transform: translateX(10px); }
+  }
+
+  .success-message {
+    background: #d4edda;
+    border: 1px solid #c3e6cb;
+    color: #155724;
+    padding: 10px 15px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    font-size: 14px;
+  }
+
+  /* レスポンシブ対応 */
+  @media (max-width: 480px) {
+    .login-card {
+      border-radius: 15px;
+    }
+
+    .login-header {
+      padding: 30px 20px;
+    }
+
+    .app-name {
+      font-size: 28px;
+    }
+
+    .login-body {
+      padding: 30px 20px;
+    }
+
+    .form-control {
+      padding: 10px 15px 10px 40px;
+      font-size: 14px;
+    }
+
+    .slack-login-btn,
+    .login-btn {
+      padding: 12px 16px;
+      font-size: 15px;
+    }
+  }
+
+  /* ローディングアニメーション */
+  .loading-spinner {
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    border: 3px solid rgba(255,255,255,.3);
+    border-radius: 50%;
+    border-top-color: white;
+    animation: spin 1s ease-in-out infinite;
+  }
+
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+</style>
+
+<div class="login-page" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; display: flex; align-items: center; justify-content: center;">
+  <div class="login-container">
+    <div class="login-card">
+      <!-- ヘッダー部分 -->
+      <div class="login-header">
+        <div class="logo-container">
+          <div class="logo-icon">
+            <span class="logo-text">T</span>
+          </div>
+          <h1 class="app-name">Takt.</h1>
+          <p class="app-tagline">業務管理をもっとシンプルに</p>
+        </div>
+      </div>
+
+      <!-- ボディ部分 -->
+      <div class="login-body">
+        <div class="welcome-text">
+          <h3>おかえりなさい</h3>
+          <p>アカウントにログインしてください</p>
+        </div>
+
+        <% if flash[:error] %>
+          <div class="error-message">
+            <i class="fa fa-exclamation-circle"></i> <%= flash[:error] %>
+          </div>
+        <% end %>
+
+        <% if flash[:success] %>
+          <div class="success-message">
+            <i class="fa fa-check-circle"></i> <%= flash[:success] %>
+          </div>
+        <% end %>
+
+        <!-- Slackログイン（シンプルなリンクとして実装） -->
+        <a href="<%= slack_login_path %>" class="slack-login-btn" data-turbo="false">
+          <svg class="slack-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M5.042 15.165a2.528 2.528 0 0 1-2.52 2.523A2.528 2.528 0 0 1 0 15.165a2.527 2.527 0 0 1 2.522-2.52h2.52v2.52zM6.313 15.165a2.527 2.527 0 0 1 2.521-2.52 2.527 2.527 0 0 1 2.521 2.52v6.313A2.528 2.528 0 0 1 8.834 24a2.528 2.528 0 0 1-2.521-2.522v-6.313zM8.834 5.042a2.528 2.528 0 0 1-2.521-2.52A2.528 2.528 0 0 1 8.834 0a2.528 2.528 0 0 1 2.521 2.522v2.52H8.834zM8.834 6.313a2.528 2.528 0 0 1 2.521 2.521 2.528 2.528 0 0 1-2.521 2.521H2.522A2.528 2.528 0 0 1 0 8.834a2.528 2.528 0 0 1 2.522-2.521h6.312zM18.956 8.834a2.528 2.528 0 0 1 2.522-2.521A2.528 2.528 0 0 1 24 8.834a2.528 2.528 0 0 1-2.522 2.521h-2.522V8.834zM17.688 8.834a2.528 2.528 0 0 1-2.523 2.521 2.527 2.527 0 0 1-2.52-2.521V2.522A2.527 2.527 0 0 1 15.165 0a2.528 2.528 0 0 1 2.523 2.522v6.312zM15.165 18.956a2.528 2.528 0 0 1 2.523 2.522A2.528 2.528 0 0 1 15.165 24a2.527 2.527 0 0 1-2.52-2.522v-2.522h2.52zM15.165 17.688a2.527 2.527 0 0 1-2.52-2.523 2.526 2.526 0 0 1 2.52-2.52h6.313A2.527 2.527 0 0 1 24 15.165a2.528 2.528 0 0 1-2.522 2.523h-6.313z" fill="currentColor"/>
+          </svg>
+          Slackでログイン
+        </a>
+
+        <% if Rails.env == "development" %>
+          <div class="divider">
+            <span>または</span>
+          </div>
+
+          <div class="dev-login-section">
+            <div class="text-center">
+              <span class="dev-badge">
+                <i class="fa fa-code"></i> 開発環境
+              </span>
+            </div>
+
+            <%= form_with url: login_path, local: true, data: { turbo: false }, html: { id: 'loginForm' } do %>
+              <div class="form-group">
+                <%= email_field_tag :email, "", {
+                  class: 'form-control', 
+                  placeholder: 'メールアドレス',
+                  required: true,
+                  autofocus: true
+                } %>
+                <i class="fa fa-envelope input-icon"></i>
+              </div>
+
+              <div class="form-group">
+                <%= password_field_tag :password, "", {
+                  class: 'form-control', 
+                  placeholder: 'パスワード',
+                  required: true
+                } %>
+                <i class="fa fa-lock input-icon"></i>
+              </div>
+
+              <button type="submit" class="login-btn" id="loginBtn">
+                <span id="loginBtnText">ログイン</span>
+                <span id="loginBtnSpinner" style="display: none;">
+                  <span class="loading-spinner"></span>
+                  ログイン中...
+                </span>
+              </button>
+            <% end %>
+          </div>
+        <% end %>
+      </div>
+    </div>
   </div>
-
-  <div class="m-t">
-    <%= button_to "Slackでログインする", slack_login_path, method: :get, data: { turbo: "false" }, class: "btn btn-primary" %>
-  </div>
-
-  <% if Rails.env == "development" %>
-    <%= form_with url: login_path, class: 'm-t' do %>
-      <div class="form-group">
-        <%= email_field_tag :email, "", {class: 'form-control', placeholder: 'メールアドレス'} %>
-      </div>
-
-      <div class="form-group">
-        <%= password_field_tag :password, "", {class: 'form-control', placeholder: 'パスワード'} %>
-      </div>
-
-      <div class="actions">
-        <%= submit_tag "ログイン", class: 'btn btn-primary block full-width m-b' %>
-      </div>
-    <% end %>
-  <% end %>
 </div>
+
+<script>
+  // フォーム送信時のローディング表示
+  document.getElementById('loginForm')?.addEventListener('submit', function(e) {
+    const btn = document.getElementById('loginBtn');
+    const btnText = document.getElementById('loginBtnText');
+    const btnSpinner = document.getElementById('loginBtnSpinner');
+    
+    btn.disabled = true;
+    btnText.style.display = 'none';
+    btnSpinner.style.display = 'inline-block';
+  });
+
+  // メールアドレスバリデーション
+  const emailInput = document.querySelector('input[name="email"]');
+  emailInput?.addEventListener('blur', function() {
+    if (this.value && !this.value.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)) {
+      this.style.borderColor = '#dc3545';
+    } else {
+      this.style.borderColor = '';
+    }
+  });
+
+  // アニメーション効果
+  document.addEventListener('DOMContentLoaded', function() {
+    const card = document.querySelector('.login-card');
+    if (card) {
+      card.style.opacity = '0';
+      card.style.transform = 'translateY(20px)';
+      
+      setTimeout(() => {
+        card.style.transition = 'all 0.6s ease-out';
+        card.style.opacity = '1';
+        card.style.transform = 'translateY(0)';
+      }, 100);
+    }
+  });
+</script>
