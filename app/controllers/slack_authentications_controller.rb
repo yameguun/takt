@@ -44,7 +44,7 @@ class SlackAuthenticationsController < ApplicationController
     # このlog_inメソッドはApplicationControllerで定義することを推奨（後述）
     log_in(user)
 
-    redirect_to root_path, notice: 'Slackアカウントでログインしました。'
+    redirect_to root_path, flash: {success: "ログインしました"}
   end
 
   private
