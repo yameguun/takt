@@ -7,6 +7,7 @@ class CreateUsers < ActiveRecord::Migration[8.0]
       t.string :password_digest
       t.string :name
       t.integer :unit_price, null: false, default: 0
+      t.integer :permission, null: false, default: 0
 
       t.timestamps
     end

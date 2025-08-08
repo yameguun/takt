@@ -6,6 +6,7 @@
 #  email           :string(255)      not null
 #  name            :string(255)
 #  password_digest :string(255)
+#  permission      :integer          default(0), not null
 #  unit_price      :integer          default(0), not null
 #  created_at      :datetime         not null
 #  updated_at      :datetime         not null

@@ -139,6 +139,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_08_06_060746) do
     t.string "password_digest"
     t.string "name"
     t.integer "unit_price", default: 0, null: false
+    t.integer "permission", default: 0, null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.index ["company_id"], name: "index_users_on_company_id"
