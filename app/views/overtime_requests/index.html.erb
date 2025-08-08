@@ -8,7 +8,7 @@
     <div class="row wrapper border-bottom white-bg page-heading">
       <div class="col-lg-12">
         <h2 class="m-t-md">
-          <i class="fa fa-fire text-navy"></i> 残業申請の承認
+          <i class="fa fa-clock-o text-navy"></i> 残業申請の承認
         </h2>
         <ol class="breadcrumb">
           <li class="breadcrumb-item">
@@ -24,27 +24,95 @@
     <!-- メインコンテンツ -->
     <div class="wrapper wrapper-content animated fadeInRight">
       <div class="row">
-        <div class="col-lg-10">
-          <div class="ibox float-e-margins">
+        <div class="col-lg-12">
+          <div class="ibox">
+            <div class="ibox-title">
+              <h5>承認待ち残業申請一覧</h5>
+              <div class="ibox-tools">
+                <span class="label label-warning-light">
+                  <%= @daily_report_projects.size %>件
+                </span>
+              </div>
+            </div>
             <div class="ibox-content">
-              <table class="table table-bordered">
-                <thead>
-                  <tr>
-                    <th>取引先</th>
-                    <th>案件名</th>
-                    <th>作業内容</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <% @daily_report_projects.each do |project| %>
-                    <tr>
-                      <td><%= project.client_name %></td>
-                      <td><%= project.project_name %></td>
-                      <td class="description-cell"><%= project.description %></td>
-                    </tr>
-                  <% end %>
-                </tbody>
-              </table>
+              <% if @daily_report_projects.any? %>
+                <div class="table-responsive">
+                  <table class="table table-hover overtime-table">
+                    <thead>
+                      <tr>
+                        <th width="10%">日付</th>
+                        <th width="12%">申請者</th>
+                        <th width="13%">取引先</th>
+                        <th width="18%">案件名</th>
+                        <th width="32%">作業内容</th>
+                        <th width="8%" class="text-center">残業時間</th>
+                        <th width="7%" class="text-center">操作</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <% @daily_report_projects.each do |project| %>
+                        <tr id="project-row-<%= project.id %>" class="overtime-request-row">
+                          <td>
+                            <span class="text-muted">
+                              <%= project.daily_report.date.strftime('%m/%d') %>
+                            </span>
+                          </td>
+                          <td>
+                            <div class="user-info">
+                              <i class="fa fa-user text-muted"></i>
+                              <strong><%= project.daily_report.user.name %></strong>
+                            </div>
+                          </td>
+                          <td>
+                            <span class="client-name">
+                              <%= project.project.client.name %>
+                            </span>
+                          </td>
+                          <td>
+                            <span class="project-name">
+                              <%= project.project.name %>
+                            </span>
+                          </td>
+                          <td>
+                            <div class="description-wrapper">
+                              <div class="description-content" id="desc-<%= project.id %>">
+                                <%= simple_format(project.description) %>
+                              </div>
+                              <% if project.description && project.description.length > 100 %>
+                                <a href="javascript:void(0);" class="toggle-description" data-id="<%= project.id %>">
+                                  <small>続きを見る</small>
+                                </a>
+                              <% end %>
+                            </div>
+                          </td>
+                          <td class="text-center">
+                            <span class="badge badge-primary">
+                              <%= project.hours %>分
+                            </span>
+                          </td>
+                          <td class="text-center">
+                            <%= form_with url: approve_overtime_request_path(project), 
+                                        method: :patch, 
+                                        local: false,
+                                        class: "approve-form",
+                                        data: { project_id: project.id } do |f| %>
+                              <button type="submit" class="btn btn-primary btn-sm approve-btn">
+                                <i class="fa fa-check"></i> 承認
+                              </button>
+                            <% end %>
+                          </td>
+                        </tr>
+                      <% end %>
+                    </tbody>
+                  </table>
+                </div>
+              <% else %>
+                <div class="text-center p-lg">
+                  <i class="fa fa-check-circle-o" style="font-size: 48px; color: #1ab394;"></i>
+                  <h3 class="m-t-md">承認待ちの残業申請はありません</h3>
+                  <p class="text-muted">新しい申請があれば、ここに表示されます。</p>
+                </div>
+              <% end %>
             </div>
           </div>
         </div>
@@ -55,10 +123,214 @@
 </div>
 
 <style>
-  .description-cell {
-    white-space: pre-wrap;
-    word-wrap: break-word;
-    max-width: 400px;
-    line-height: 1.5;
+  .overtime-table {
+    margin-bottom: 0;
+  }
+
+  .overtime-table thead th {
+    background-color: #f5f5f6;
+    border-bottom: 2px solid #e7eaec;
+    font-weight: 600;
+    color: #676a6c;
+    padding: 12px 15px;
+  }
+
+  .overtime-table tbody tr {
+    transition: all 0.3s ease;
+  }
+
+  .overtime-table tbody tr:hover {
+    background-color: #f9f9f9;
+  }
+
+  .overtime-request-row.fade-out {
+    opacity: 0;
+    transform: translateX(20px);
+    transition: all 0.5s ease;
+  }
+
+  .user-info {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .client-name {
+    color: #676a6c;
+    font-weight: 500;
+  }
+
+  .project-name {
+    color: #1ab394;
+    font-weight: 600;
+  }
+
+  .description-wrapper {
+    position: relative;
+  }
+
+  .description-content {
+    background-color: #f8f8f9;
+    border-left: 3px solid #1ab394;
+    padding: 10px 12px;
+    border-radius: 0 4px 4px 0;
+    font-size: 13px;
+    line-height: 1.6;
+    color: #3a3a3a;
+    max-height: 80px;
+    overflow: hidden;
+    transition: max-height 0.3s ease;
+  }
+
+  .description-content.expanded {
+    max-height: none;
+  }
+
+  .description-content p {
+    margin: 0 0 8px 0;
+  }
+
+  .description-content p:last-child {
+    margin-bottom: 0;
+  }
+
+  .toggle-description {
+    color: #1ab394;
+    font-weight: 500;
+    margin-top: 5px;
+    display: inline-block;
+  }
+
+  .toggle-description:hover {
+    color: #179d82;
+    text-decoration: underline;
+  }
+
+  .approve-btn {
+    min-width: 80px;
+    font-weight: 500;
+  }
+
+  .approve-btn:hover {
+    background-color: #18a689;
+    border-color: #18a689;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  }
+
+  .approve-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+
+  .table-responsive {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .p-lg {
+    padding: 30px;
+  }
+
+  .m-t-md {
+    margin-top: 20px;
+  }
+
+  @media (max-width: 768px) {
+    .overtime-table {
+      font-size: 12px;
+    }
+    
+    .description-content {
+      font-size: 12px;
+      padding: 8px 10px;
+    }
+    
+    .approve-btn {
+      min-width: 60px;
+      font-size: 11px;
+      padding: 4px 8px;
+    }
   }
 </style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  // 作業内容の展開/折りたたみ
+  document.querySelectorAll('.toggle-description').forEach(function(link) {
+    link.addEventListener('click', function(e) {
+      e.preventDefault();
+      const id = this.dataset.id;
+      const descElement = document.getElementById('desc-' + id);
+      
+      if (descElement.classList.contains('expanded')) {
+        descElement.classList.remove('expanded');
+        this.innerHTML = '<small>続きを見る</small>';
+      } else {
+        descElement.classList.add('expanded');
+        this.innerHTML = '<small>折りたたむ</small>';
+      }
+    });
+  });
+
+  // 承認フォームのAjax送信
+  document.querySelectorAll('.approve-form').forEach(function(form) {
+    form.addEventListener('ajax:beforeSend', function(e) {
+      const btn = this.querySelector('.approve-btn');
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> 処理中...';
+    });
+
+    form.addEventListener('ajax:success', function(e) {
+      const projectId = this.dataset.projectId;
+      const row = document.getElementById('project-row-' + projectId);
+      
+      // 成功メッセージを表示（toastrがない場合はalertを使用）
+      if (typeof toastr !== 'undefined') {
+        toastr.success('残業申請を承認しました');
+      } else {
+        alert('残業申請を承認しました');
+      }
+      
+      // 行をフェードアウトして削除
+      row.classList.add('fade-out');
+      setTimeout(function() {
+        row.remove();
+        
+        // 残りの件数を更新
+        const remainingRows = document.querySelectorAll('.overtime-request-row').length;
+        const countLabel = document.querySelector('.label-warning-light');
+        if (countLabel) {
+          countLabel.textContent = remainingRows + '件';
+        }
+        
+        // 全て承認された場合は完了メッセージを表示
+        if (remainingRows === 0) {
+          const tableContainer = document.querySelector('.table-responsive');
+          if (tableContainer) {
+            tableContainer.parentElement.innerHTML = `
+              <div class="text-center p-lg">
+                <i class="fa fa-check-circle-o" style="font-size: 48px; color: #1ab394;"></i>
+                <h3 class="m-t-md">承認待ちの残業申請はありません</h3>
+                <p class="text-muted">新しい申請があれば、ここに表示されます。</p>
+              </div>
+            `;
+          }
+        }
+      }, 500);
+    });
+
+    form.addEventListener('ajax:error', function(e) {
+      const btn = this.querySelector('.approve-btn');
+      btn.disabled = false;
+      btn.innerHTML = '<i class="fa fa-check"></i> 承認';
+      
+      if (typeof toastr !== 'undefined') {
+        toastr.error('承認処理に失敗しました。もう一度お試しください。');
+      } else {
+        alert('承認処理に失敗しました。もう一度お試しください。');
+      }
+    });
+  });
+});
+</script>

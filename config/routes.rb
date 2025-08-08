@@ -23,7 +23,11 @@ Rails.application.routes.draw do
   post "reports" => "daily_reports#create"
 
   # 残業承認画面
-  get "overtime-requests" => "overtime_requests#index"
+  resources :overtime_requests, only: [:index] do
+    member do
+      patch :approve
+    end
+  end
 
   namespace :api do
     resources :clients, only: [:index]
