@@ -71,6 +71,11 @@
                   <% works = @daily_report.daily_report_projects.presence || [@daily_report.daily_report_projects.build] %>
                   <% works.each_with_index do |work, index| %>
                     <div class="work-item-card animated fadeIn" data-work-index="<%= index %>" data-work-id="<%= work.id %>">
+                      <!-- 既存レコードのIDを保持するhidden field -->
+                      <% if work.persisted? %>
+                        <input type="hidden" name="existing_work_ids[<%= index %>]" value="<%= work.id %>" class="existing-work-id">
+                      <% end %>
+                      
                       <div class="panel panel-default">
                         <div class="panel-heading bg-muted">
                           <div class="row">
@@ -137,7 +142,7 @@
                                   <input type="hidden" 
                                          class="client-id" 
                                          name="works[<%= index %>][client_id]" 
-                                         value="<%= work.try(:project).try(:client_id) %>">
+                                         value="<%= work.try(:project).try(:client_id) || work.try(:client_id) %>">
                                 </div>
                                 <div class="suggestions-dropdown client-suggestions"></div>
                               </div>
@@ -160,7 +165,7 @@
                                          placeholder="案件名を検索・入力" 
                                          required 
                                          autocomplete="off" 
-                                         <%= 'disabled' if work.project_id.blank? %> 
+                                         <%= 'disabled' if work.project_id.blank? && work.client_id.blank? %> 
                                          value="<%= work.try(:project).try(:name) %>">
                                   <input type="hidden" 
                                          class="project-id" 
@@ -414,6 +419,11 @@
   color: white;
 }
 
+.red-bg {
+  background-color: #ed5565 !important;
+  color: white;
+}
+
 /* レスポンシブ対応 */
 @media (max-width: 768px) {
   .ibox-tools .btn {
@@ -528,6 +538,16 @@
 
 .m-b-none {
   margin-bottom: 0;
+}
+
+/* 削除済みマーカー */
+.work-item-card.marked-for-deletion {
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+.work-item-card.marked-for-deletion .panel {
+  background-color: #f8f8f9;
 }
 </style>
 
@@ -868,12 +888,25 @@ $(document).ready(function() {
     // 作業削除ボタン
     $(document).on('click', '.remove-work-btn', function() {
         const workItem = $(this).closest('.work-item-card');
-        workItem.fadeOut(300, function() {
-            $(this).remove();
-            updateWorkNumbers();
-            updateRemoveButtons();
-            calculateTotalHours();
-        });
+        const workId = workItem.data('work-id');
+        
+        // 既存のレコード（DBに保存済み）の場合は、削除マークを付ける
+        if (workId) {
+            workItem.addClass('marked-for-deletion');
+            workItem.hide();
+        } else {
+            // 新規追加したものは完全に削除
+            workItem.fadeOut(300, function() {
+                $(this).remove();
+                updateWorkNumbers();
+                updateRemoveButtons();
+                calculateTotalHours();
+            });
+        }
+        
+        updateWorkNumbers();
+        updateRemoveButtons();
+        calculateTotalHours();
     });
 
     // 作業時間入力時
@@ -1003,42 +1036,56 @@ $(document).ready(function() {
 
     // 作業番号更新
     function updateWorkNumbers() {
+        let visibleIndex = 0;
         $('.work-item-card').each(function(index) {
-            $(this).find('.work-number').text(index + 1);
-            $(this).attr('data-work-index', index);
+            const workItem = $(this);
             
-            // name属性も更新
-            $(this).find('input, textarea').each(function() {
-                const name = $(this).attr('name');
-                if (name) {
-                    const newName = name.replace(/works\[\d+\]/, `works[${index}]`);
-                    $(this).attr('name', newName);
+            // 削除マークが付いていない項目のみ番号を更新
+            if (!workItem.hasClass('marked-for-deletion')) {
+                workItem.find('.work-number').text(visibleIndex + 1);
+                workItem.attr('data-work-index', visibleIndex);
+                
+                // name属性も更新（削除マークが付いていない項目のみ）
+                workItem.find('input, textarea').each(function() {
+                    const name = $(this).attr('name');
+                    if (name && !name.includes('existing_work_ids')) {
+                        const newName = name.replace(/works\[\d+\]/, `works[${visibleIndex}]`);
+                        $(this).attr('name', newName);
+                    }
+                });
+                
+                // existing_work_ids のインデックスも更新
+                const existingWorkId = workItem.find('.existing-work-id');
+                if (existingWorkId.length) {
+                    existingWorkId.attr('name', `existing_work_ids[${visibleIndex}]`);
                 }
-            });
+                
+                visibleIndex++;
+            }
         });
     }
 
     // 削除ボタン表示制御
     function updateRemoveButtons() {
-        const workItems = $('.work-item-card');
-        if (workItems.length <= 1) {
-            workItems.find('.remove-work-btn').prop('disabled', true).addClass('disabled');
+        const visibleWorkItems = $('.work-item-card:not(.marked-for-deletion)');
+        if (visibleWorkItems.length <= 1) {
+            visibleWorkItems.find('.remove-work-btn').prop('disabled', true).addClass('disabled');
         } else {
-            workItems.find('.remove-work-btn').prop('disabled', false).removeClass('disabled');
+            visibleWorkItems.find('.remove-work-btn').prop('disabled', false).removeClass('disabled');
         }
     }
 
     // 合計時間計算
     function calculateTotalHours() {
         let totalMinutes = 0;
-        $('.work-hours-input').each(function() {
+        $('.work-item-card:not(.marked-for-deletion) .work-hours-input').each(function() {
             const minutes = parseInt($(this).val()) || 0;
             totalMinutes += minutes;
         });
         const totalHours = (totalMinutes / 60).toFixed(1);
         $('#totalHours').text(totalHours);
         
-        // 8時間を超えた場合の色変更（視覚的なフィードバックのみ）
+        // 8時間を超えた場合の色変更
         if (totalMinutes > 480) {
             $('#totalHours').parent().parent().parent().removeClass('navy-bg').addClass('yellow-bg');
         } else {
@@ -1064,7 +1111,7 @@ $(document).ready(function() {
         let hasError = false;
         let errorMessage = '';
 
-        $('.work-item-card').each(function(index) {
+        $('.work-item-card:not(.marked-for-deletion)').each(function(index) {
             const customer = $(this).find('.client-input').val();
             const project = $(this).find('.project-input').val();
             const hours = $(this).find('.work-hours-input').val();
@@ -1089,6 +1136,9 @@ $(document).ready(function() {
             showNotification('error', errorMessage);
             return false;
         }
+
+        // 削除マークが付いた項目を完全に削除してからフォーム送信
+        $('.work-item-card.marked-for-deletion').remove();
 
         // 送信中表示
         $(this).find('button[type="submit"]').prop('disabled', true)
