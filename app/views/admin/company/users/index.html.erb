@@ -39,7 +39,14 @@
                     <tr>
                       <td><%= user.id %></td>
                       <td><%= user&.department&.name %></td>
-                      <td><%= user.name %></td>
+                      <td>
+                        <%= user.name %>
+                        <% if user.avatar.attached? %>
+                          <%= image_tag user.avatar, class: "img-circle", style: "width: 32px; height: 32px; margin-right: 10px;", alt: user.name %>
+                        <% else %>
+                          <%= image_tag "https://via.placeholder.com/32", class: "img-circle", style: "width: 32px; height: 32px; margin-right: 10px;", alt: "No avatar" %>
+                        <% end %>
+                      </td>
                       <td><%= number_to_currency(user.unit_price) %></td>
                       <td>
                         <%= link_to '修正', edit_admin_company_user_path(@company,user), class: 'btn btn-primary btn-sm' %>

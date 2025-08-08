@@ -7,7 +7,7 @@ FROM ruby:3.4.4-slim
 # - nodejs, yarn: JavaScriptのランタイムとパッケージ管理
 # - libyaml-dev: psych gemのビルドに必要
 # - git: GemfileでGitHubリポジトリを参照するために必要
-RUN apt-get update -qq && apt-get install -y build-essential libmariadb-dev nodejs yarn libyaml-dev git
+RUN apt-get update -qq && apt-get install -y build-essential libmariadb-dev nodejs yarn libyaml-dev git imagemagick 
 
 # 作業ディレクトリを作成
 WORKDIR /myapp

@@ -3,6 +3,7 @@ require 'json'
 require 'uri'
 require 'cgi'
 require 'securerandom'
+require 'open-uri'
 
 class SlackAuthenticationsController < ApplicationController
   # ユーザーをSlackの認証ページにリダイレクトさせる
@@ -138,9 +139,15 @@ class SlackAuthenticationsController < ApplicationController
   def find_or_create_user(slack_profile)
     email = slack_profile['email'].downcase
     user = User.find_by(email: email)
-    return user if user
+    
+    # 既存ユーザーの場合も画像を更新
+    if user
+      update_user_avatar(user, slack_profile)
+      return user
+    end
 
-    User.create!(
+    # 新規ユーザーの作成
+    user = User.create!(
       company: Company.all.first,
       department: Department.all.first,
       email: email,
@@ -149,7 +156,41 @@ class SlackAuthenticationsController < ApplicationController
             email.split('@').first,
       # パスワードが必須な場合はダミーを設定
       password: SecureRandom.hex(16)
-      # avatar_url: slack_profile['image_72'] # Avatarを保存するカラムがある場合
     )
+    
+    # アバター画像を保存
+    update_user_avatar(user, slack_profile)
+    
+    user
+  end
+
+  # ユーザーのアバター画像を更新
+  def update_user_avatar(user, slack_profile)
+    # Slackプロフィール画像のURL（優先順位: image_512 > image_192 > image_72 > image_48）
+    avatar_url = slack_profile['image_512'] || 
+                 slack_profile['image_192'] || 
+                 slack_profile['image_72'] || 
+                 slack_profile['image_48']
+    
+    return unless avatar_url.present?
+    
+    # 画像をダウンロードして保存
+    begin
+      downloaded_image = URI.open(avatar_url)
+      
+      # ファイル名を生成（メールアドレスから@より前の部分を使用）
+      filename = "#{user.email.split('@').first}_avatar.jpg"
+      
+      # Active Storageに保存
+      user.avatar.attach(
+        io: downloaded_image,
+        filename: filename,
+        content_type: downloaded_image.content_type || 'image/jpeg'
+      )
+      
+      Rails.logger.info("[SlackOAuth] Avatar saved for user: #{user.email}")
+    rescue => e
+      Rails.logger.error("[SlackOAuth] Failed to save avatar: #{e.class}: #{e.message}")
+    end
   end
 end

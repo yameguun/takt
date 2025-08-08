@@ -26,6 +26,8 @@
 class User < ApplicationRecord
   has_secure_password
 
+  has_one_attached :avatar
+
   belongs_to :company
   belongs_to :department, optional: true
 
@@ -38,5 +40,23 @@ class User < ApplicationRecord
 
   def is_manager?
     self.permission >= 0
+  end
+
+   # サムネイル版（100x100以内にリサイズ）
+  def avatar_thumbnail
+    avatar.variant(
+      resize_to_limit: [100, 100],
+      format: :webp,  # WebP形式に変換（軽量化）
+      saver: { quality: 80 }  # 品質80%
+    ).processed
+  end
+  
+  # 中サイズ版（300x300以内にリサイズ）
+  def avatar_medium
+    avatar.variant(
+      resize_to_limit: [300, 300],
+      format: :webp,
+      saver: { quality: 85 }
+    ).processed
   end
 end
