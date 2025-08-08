@@ -141,7 +141,8 @@ class SlackAuthenticationsController < ApplicationController
     return user if user
 
     User.create!(
-      company: Company.first,
+      company: Company.all.first,
+      department: Department.all.first,
       email: email,
       name: slack_profile['display_name_normalized'].presence ||
             slack_profile['real_name_normalized'].presence ||

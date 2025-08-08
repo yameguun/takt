@@ -37,6 +37,6 @@ class User < ApplicationRecord
   validates :unit_price, presence: true, numericality: true
 
   def is_manager?
-    self.permission > 0
+    self.permission >= 0
   end
 end
