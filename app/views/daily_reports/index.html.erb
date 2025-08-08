@@ -1,0 +1,1171 @@
+<% provide(:title, "日報") %>
+<div id="wrapper">
+  <%= render 'shared/header' %>
+  <div id="page-wrapper" class="gray-bg">
+    <%= render 'shared/navbar' %>
+    
+    <!-- ヘッダー部分 -->
+    <div class="row wrapper border-bottom white-bg page-heading">
+      <div class="col-lg-12">
+        <h2 class="m-t-md">
+          <i class="fa fa-calendar-o text-navy"></i> 日報作成
+          <small class="m-l-sm">(<%= @write_date %>)</small>
+        </h2>
+        <ol class="breadcrumb">
+          <li class="breadcrumb-item">
+            <a href="/">ホーム</a>
+          </li>
+          <li class="breadcrumb-item active">
+            <strong>日報作成</strong>
+          </li>
+        </ol>
+      </div>
+    </div>
+
+    <!-- メインコンテンツ -->
+    <div class="wrapper wrapper-content animated fadeInRight">
+      <!-- 通知エリア -->
+      <div id="notifications"></div>
+      
+      <form action="/reports" method="POST" id="dailyReportForm" data-turbo="false">
+        <%= hidden_field_tag :authenticity_token, form_authenticity_token %>
+        
+        <div class="row">
+          <div class="col-lg-12">
+            <!-- 日付選択カード -->
+            <div class="ibox">
+              <div class="ibox-content text-center p-md">
+                <div class="row">
+                  <div class="col-md-4 col-md-offset-4">
+                    <div class="form-group">
+                      <label class="font-bold text-muted">
+                        <i class="fa fa-calendar"></i> 日報作成日
+                      </label>
+                      <input type="date" 
+                             class="form-control input-lg text-center" 
+                             name="report_date" 
+                             id="reportDate" 
+                             required 
+                             value="<%= @write_date %>">
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 作業記録セクション -->
+            <div class="ibox">
+              <div class="ibox-title bg-primary">
+                <h5 class="text-white">
+                  <i class="fa fa-tasks"></i> 作業記録
+                </h5>
+                <div class="ibox-tools">
+                  <button type="button" class="btn btn-xs btn-white" id="addWorkBtn">
+                    <i class="fa fa-plus"></i> 作業追加
+                  </button>
+                </div>
+              </div>
+              <div class="ibox-content">
+                <!-- 作業リスト -->
+                <div id="workList">
+                  <% works = @daily_report.daily_report_projects.presence || [@daily_report.daily_report_projects.build] %>
+                  <% works.each_with_index do |work, index| %>
+                    <div class="work-item-card animated fadeIn" data-work-index="<%= index %>" data-work-id="<%= work.id %>">
+                      <!-- 既存レコードのIDを保持するhidden field -->
+                      <% if work.persisted? %>
+                        <input type="hidden" name="existing_work_ids[<%= index %>]" value="<%= work.id %>" class="existing-work-id">
+                      <% end %>
+                      
+                      <div class="panel panel-default">
+                        <div class="panel-heading bg-muted">
+                          <div class="row">
+                            <div class="col-xs-4">
+                              <h5 class="m-t-xs">
+                                <i class="fa fa-briefcase text-info"></i> 
+                                作業 #<span class="work-number"><%= index + 1 %></span>
+                              </h5>
+                            </div>
+                            <div class="col-xs-8 text-right">
+                              <!-- 残業申請ボタン -->
+                              <% if work.persisted? %>
+                                <% if work.is_overtime_approved %>
+                                  <button type="button" class="btn btn-success btn-xs" disabled>
+                                    <i class="fa fa-check-circle"></i> 残業承認済み
+                                  </button>
+                                <% elsif work.is_overtime_requested %>
+                                  <button type="button" class="btn btn-warning btn-xs overtime-btn" 
+                                          data-status="pending" 
+                                          data-work-id="<%= work.id %>"
+                                          data-work-index="<%= index + 1 %>">
+                                    <i class="fa fa-clock-o"></i> 承認待ち
+                                  </button>
+                                <% else %>
+                                  <button type="button" class="btn btn-primary btn-xs overtime-btn" 
+                                          data-status="not_requested"
+                                          data-work-id="<%= work.id %>"
+                                          data-work-index="<%= index + 1 %>">
+                                    <i class="fa fa-moon-o"></i> 残業申請
+                                  </button>
+                                <% end %>
+                              <% else %>
+                                <button type="button" class="btn btn-default btn-xs" disabled>
+                                  <i class="fa fa-moon-o"></i> 保存後に申請可能
+                                </button>
+                              <% end %>
+                              
+                              <button type="button" class="btn btn-danger btn-xs remove-work-btn m-l-xs">
+                                <i class="fa fa-times"></i> 削除
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                        <div class="panel-body">
+                          <div class="row">
+                            <!-- 顧客名入力 -->
+                            <div class="col-md-6">
+                              <div class="form-group">
+                                <label class="control-label font-bold">
+                                  <i class="fa fa-building-o text-info"></i> 顧客名
+                                  <span class="text-danger">*</span>
+                                </label>
+                                <div class="input-group">
+                                  <span class="input-group-addon bg-white">
+                                    <i class="fa fa-search"></i>
+                                  </span>
+                                  <input type="text" 
+                                         class="form-control client-input" 
+                                         name="works[<%= index %>][customer]" 
+                                         placeholder="顧客名を検索・入力" 
+                                         required 
+                                         autocomplete="off" 
+                                         value="<%= work.try(:project).try(:client).try(:name) %>">
+                                  <input type="hidden" 
+                                         class="client-id" 
+                                         name="works[<%= index %>][client_id]" 
+                                         value="<%= work.try(:project).try(:client_id) || work.try(:client_id) %>">
+                                </div>
+                                <div class="suggestions-dropdown client-suggestions"></div>
+                              </div>
+                            </div>
+
+                            <!-- 案件名入力 -->
+                            <div class="col-md-6">
+                              <div class="form-group">
+                                <label class="control-label font-bold">
+                                  <i class="fa fa-folder-open-o text-success"></i> 案件名
+                                  <span class="text-danger">*</span>
+                                </label>
+                                <div class="input-group">
+                                  <span class="input-group-addon bg-white">
+                                    <i class="fa fa-search"></i>
+                                  </span>
+                                  <input type="text" 
+                                         class="form-control project-input" 
+                                         name="works[<%= index %>][project]" 
+                                         placeholder="案件名を検索・入力" 
+                                         required 
+                                         autocomplete="off" 
+                                         <%= 'disabled' if work.project_id.blank? && work.client_id.blank? %> 
+                                         value="<%= work.try(:project).try(:name) %>">
+                                  <input type="hidden" 
+                                         class="project-id" 
+                                         name="works[<%= index %>][project_id]" 
+                                         value="<%= work.project_id %>">
+                                </div>
+                                <div class="suggestions-dropdown project-suggestions"></div>
+                              </div>
+                            </div>
+                          </div>
+
+                          <div class="row">
+                            <!-- 作業時間入力 -->
+                            <div class="col-md-4">
+                              <div class="form-group">
+                                <label class="control-label font-bold">
+                                  <i class="fa fa-clock-o text-warning"></i> 作業時間
+                                  <span class="text-danger">*</span>
+                                </label>
+                                <div class="input-group">
+                                  <input type="number" 
+                                         class="form-control text-center work-hours-input" 
+                                         name="works[<%= index %>][hours]" 
+                                         placeholder="0" 
+                                         step="15" 
+                                         min="0" 
+                                         max="1440" 
+                                         required 
+                                         value="<%= work.hours %>">
+                                  <span class="input-group-addon bg-primary text-white">分</span>
+                                </div>
+                                <small class="text-muted">
+                                  <span class="hours-display">0</span> 時間
+                                </small>
+                              </div>
+                            </div>
+
+                            <!-- 作業内容 -->
+                            <div class="col-md-8">
+                              <div class="form-group">
+                                <label class="control-label font-bold">
+                                  <i class="fa fa-pencil text-muted"></i> 作業内容
+                                  <small class="text-muted">（任意）</small>
+                                </label>
+                                <textarea class="form-control" 
+                                          name="works[<%= index %>][description]" 
+                                          rows="3" 
+                                          placeholder="実施した作業の詳細を記入"><%= work.description %></textarea>
+                              </div>
+                            </div>
+                          </div>
+
+                          <!-- 残業申請状態の表示 -->
+                          <% if work.is_overtime_requested || work.is_overtime_approved %>
+                            <div class="row">
+                              <div class="col-md-12">
+                                <div class="alert <%= work.is_overtime_approved ? 'alert-success' : 'alert-warning' %> m-t-sm m-b-none">
+                                  <i class="fa <%= work.is_overtime_approved ? 'fa-check-circle' : 'fa-clock-o' %>"></i>
+                                  この作業は残業として<%= work.is_overtime_approved ? '承認されています' : '申請中です' %>
+                                </div>
+                              </div>
+                            </div>
+                          <% end %>
+                        </div>
+                      </div>
+                    </div>
+                  <% end %>
+                </div>
+
+                <!-- 合計時間表示 -->
+                <div class="row m-t-lg">
+                  <div class="col-lg-12">
+                    <div class="widget style1 navy-bg">
+                      <div class="row">
+                        <div class="col-xs-4">
+                          <i class="fa fa-clock-o fa-3x"></i>
+                        </div>
+                        <div class="col-xs-8 text-right">
+                          <span class="font-bold">本日の合計作業時間</span>
+                          <h2 class="font-bold"><span id="totalHours">0.0</span> 時間</h2>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 日報内容セクション -->
+            <div class="ibox">
+              <div class="ibox-title">
+                <h5>
+                  <i class="fa fa-file-text-o"></i> 日報内容
+                </h5>
+              </div>
+              <div class="ibox-content">
+                <div class="form-group">
+                  <label class="control-label font-bold">
+                    <i class="fa fa-edit"></i> 本日の報告
+                    <span class="text-danger">*</span>
+                  </label>
+                  <textarea class="form-control" 
+                            name="report_content" 
+                            rows="10" 
+                            placeholder="【本日の業務内容】&#10;&#10;【成果・完了事項】&#10;&#10;【課題・懸念事項】&#10;&#10;【明日の予定】&#10;" 
+                            required><%= @daily_report.content %></textarea>
+                  <p class="help-block m-t-xs">
+                    <i class="fa fa-info-circle"></i> 
+                    業務内容、成果、課題、明日の予定を具体的に記載してください
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <!-- 提出ボタン -->
+            <div class="row m-b-lg">
+              <div class="col-lg-12">
+                <div class="text-center">
+                  <button type="submit" class="btn btn-primary btn-lg">
+                    <i class="fa fa-check"></i> 日報を提出する
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </form>
+    </div>
+    <%= render 'shared/footer' %>
+  </div>
+</div>
+
+<style>
+/* カスタムスタイル */
+.work-item-card {
+  margin-bottom: 20px;
+}
+
+.work-item-card .panel {
+  border: 1px solid #e7eaec;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+  transition: all 0.3s ease;
+}
+
+.work-item-card .panel:hover {
+  box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+  transform: translateY(-2px);
+}
+
+.work-item-card .panel-heading {
+  background: #f8f8f9;
+  border-bottom: 2px solid #e7eaec;
+  padding: 12px 15px;
+}
+
+.work-item-card .panel-body {
+  padding: 20px;
+}
+
+.suggestions-dropdown {
+  position: absolute;
+  background: white;
+  border: 1px solid #e7eaec;
+  border-top: none;
+  border-radius: 0 0 4px 4px;
+  max-height: 250px;
+  overflow-y: auto;
+  width: calc(100% - 34px);
+  left: 34px;
+  z-index: 1050;
+  display: none;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+}
+
+.suggestion-item {
+  padding: 12px 15px;
+  cursor: pointer;
+  border-bottom: 1px solid #f3f3f4;
+  transition: all 0.2s;
+  font-size: 14px;
+}
+
+.suggestion-item:hover {
+  background-color: #1ab394;
+  color: white;
+}
+
+.suggestion-item:last-child {
+  border-bottom: none;
+}
+
+.loading {
+  position: relative;
+}
+
+.loading:after {
+  content: "";
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 16px;
+  height: 16px;
+  border: 2px solid #f3f3f3;
+  border-radius: 50%;
+  border-top: 2px solid #1ab394;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: translateY(-50%) rotate(0deg); }
+  100% { transform: translateY(-50%) rotate(360deg); }
+}
+
+.widget.style1 {
+  padding: 20px;
+  border-radius: 5px;
+  color: white;
+}
+
+.hours-display {
+  font-weight: 600;
+  color: #1ab394;
+}
+
+/* 残業申請ボタンスタイル */
+.overtime-btn {
+  min-width: 90px;
+}
+
+.overtime-btn:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
+/* アラートスタイル */
+.alert-warning {
+  background-color: #fcf8e3;
+  border-color: #faebcc;
+  color: #8a6d3b;
+}
+
+.alert-success {
+  background-color: #d4edda;
+  border-color: #c3e6cb;
+  color: #155724;
+}
+
+.yellow-bg {
+  background-color: #f8ac59 !important;
+  color: white;
+}
+
+.red-bg {
+  background-color: #ed5565 !important;
+  color: white;
+}
+
+/* レスポンシブ対応 */
+@media (max-width: 768px) {
+  .ibox-tools .btn {
+    padding: 2px 8px;
+    font-size: 12px;
+  }
+  
+  .work-item-card .panel-body {
+    padding: 15px;
+  }
+  
+  .widget.style1 {
+    padding: 15px;
+  }
+  
+  .widget.style1 i {
+    font-size: 2em !important;
+  }
+  
+  .btn-lg {
+    padding: 8px 16px;
+    font-size: 16px;
+  }
+  
+  .wrapper-content {
+    padding: 15px 10px;
+  }
+  
+  .overtime-btn {
+    min-width: auto;
+    margin-bottom: 5px;
+  }
+}
+
+@media (max-width: 480px) {
+  .work-item-card .panel-heading h5 {
+    font-size: 14px;
+  }
+  
+  .remove-work-btn {
+    padding: 2px 6px;
+    font-size: 11px;
+  }
+  
+  .panel-heading .col-xs-4 {
+    width: 100%;
+  }
+  
+  .panel-heading .col-xs-8 {
+    width: 100%;
+    text-align: left !important;
+    margin-top: 10px;
+  }
+}
+
+/* アニメーション */
+.animated {
+  animation-duration: 0.5s;
+  animation-fill-mode: both;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.fadeIn {
+  animation-name: fadeIn;
+}
+
+@keyframes fadeInRight {
+  from { opacity: 0; transform: translateX(20px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+.fadeInRight {
+  animation-name: fadeInRight;
+}
+
+/* フォーカス状態の改善 */
+.form-control:focus {
+  border-color: #1ab394;
+  box-shadow: 0 0 0 0.2rem rgba(26, 179, 148, 0.25);
+}
+
+.btn-primary:focus {
+  box-shadow: 0 0 0 0.2rem rgba(26, 179, 148, 0.5);
+}
+
+/* 入力グループのスタイル改善 */
+.input-group-addon {
+  background-color: #f8f8f9;
+  border-color: #e7eaec;
+}
+
+.input-group-addon.bg-white {
+  background-color: white !important;
+}
+
+.input-group-addon.bg-primary {
+  background-color: #1ab394 !important;
+  border-color: #1ab394;
+}
+
+.m-l-xs {
+  margin-left: 5px;
+}
+
+.m-t-sm {
+  margin-top: 10px;
+}
+
+.m-b-none {
+  margin-bottom: 0;
+}
+
+/* 削除済みマーカー */
+.work-item-card.marked-for-deletion {
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+.work-item-card.marked-for-deletion .panel {
+  background-color: #f8f8f9;
+}
+</style>
+
+<script>
+$(document).ready(function() {
+    let workIndex = $('.work-item-card').length;
+    const COMPANY_ID = <%= current_user.company_id %>;
+
+    // 日付変更時の処理
+    $('#reportDate').on('change', function() {
+        const selectedDate = $(this).val();
+        if (selectedDate) {
+            const currentPath = window.location.pathname;
+            window.location.href = `${currentPath}?report_date=${selectedDate}`;
+        }
+    });
+
+    // 残業申請ボタンの処理（作業単位）
+    $(document).on('click', '.overtime-btn', async function() {
+        const btn = $(this);
+        const currentStatus = btn.data('status');
+        const workId = btn.data('work-id');
+        const workIndex = btn.data('work-index');
+        const reportDate = $('#reportDate').val();
+        
+        if (!workId) {
+            showNotification('error', 'この作業は保存されていません。日報を提出してから残業申請してください。');
+            return;
+        }
+        
+        // ボタンを無効化
+        btn.prop('disabled', true);
+        
+        try {
+            let response;
+            
+            if (currentStatus === 'not_requested') {
+                // 残業申請を送信
+                btn.html('<i class="fa fa-spinner fa-spin"></i> 申請中...');
+                
+                response = await fetch(`/api/daily_report_projects/${workId}/request_overtime`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-Token': $('[name="authenticity_token"]').val()
+                    },
+                    body: JSON.stringify({
+                        report_date: reportDate,
+                        work_index: workIndex
+                    })
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    
+                    // ボタンを承認待ち状態に変更
+                    btn.removeClass('btn-primary').addClass('btn-warning');
+                    btn.html('<i class="fa fa-clock-o"></i> 承認待ち');
+                    btn.data('status', 'pending');
+                    
+                    // アラート表示を追加
+                    const alertHtml = `
+                        <div class="row">
+                            <div class="col-md-12">
+                                <div class="alert alert-warning m-t-sm m-b-none">
+                                    <i class="fa fa-clock-o"></i>
+                                    この作業は残業として申請中です
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    btn.closest('.panel-body').append(alertHtml);
+                    
+                    showNotification('success', data.message);
+                } else {
+                    throw new Error('申請に失敗しました');
+                }
+                
+            } else if (currentStatus === 'pending') {
+                // 申請を取り消す確認
+                if (!confirm(`作業 #${workIndex} の残業申請を取り消しますか？`)) {
+                    btn.prop('disabled', false);
+                    return;
+                }
+                
+                btn.html('<i class="fa fa-spinner fa-spin"></i> 取消中...');
+                
+                response = await fetch(`/api/daily_report_projects/${workId}/cancel_overtime`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-Token': $('[name="authenticity_token"]').val()
+                    },
+                    body: JSON.stringify({
+                        report_date: reportDate,
+                        work_index: workIndex
+                    })
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    
+                    // ボタンを未申請状態に戻す
+                    btn.removeClass('btn-warning').addClass('btn-primary');
+                    btn.html('<i class="fa fa-moon-o"></i> 残業申請');
+                    btn.data('status', 'not_requested');
+                    
+                    // アラート表示を削除
+                    btn.closest('.panel-body').find('.alert').parent().parent().remove();
+                    
+                    showNotification('info', data.message);
+                } else {
+                    throw new Error('取消に失敗しました');
+                }
+            }
+            
+        } catch (error) {
+            console.error('残業申請エラー:', error);
+            showNotification('error', error.message || '処理中にエラーが発生しました');
+            
+            // エラー時はボタンを元に戻す
+            if (currentStatus === 'not_requested') {
+                btn.html('<i class="fa fa-moon-o"></i> 残業申請');
+            } else {
+                btn.html('<i class="fa fa-clock-o"></i> 承認待ち');
+            }
+        } finally {
+            // ボタンを有効化
+            btn.prop('disabled', false);
+        }
+    });
+
+    // 顧客検索API
+    async function searchClients(query) {
+        try {
+            const response = await fetch(`/api/clients.json?company_id=${COMPANY_ID}&name=${encodeURIComponent(query)}`);
+            if (!response.ok) throw new Error('API request failed');
+            const data = await response.json();
+            return data.clients || [];
+        } catch (error) {
+            console.error('顧客検索エラー:', error);
+            showNotification('error', '顧客の検索に失敗しました');
+            return [];
+        }
+    }
+
+    // 案件検索API
+    async function searchProjects(clientId, query = '') {
+        try {
+            const response = await fetch(`/api/projects.json?client_id=${clientId}&name=${encodeURIComponent(query)}`);
+            if (!response.ok) throw new Error('API request failed');
+            const data = await response.json();
+            return data.projects || [];
+        } catch (error) {
+            console.error('案件検索エラー:', error);
+            showNotification('error', '案件の検索に失敗しました');
+            return [];
+        }
+    }
+
+    // 通知表示
+    function showNotification(type, message) {
+        const alertClass = type === 'error' ? 'alert-danger' : 
+                         type === 'warning' ? 'alert-warning' : 
+                         type === 'info' ? 'alert-info' : 'alert-success';
+        const icon = type === 'error' ? 'fa-exclamation-circle' : 
+                    type === 'warning' ? 'fa-exclamation-triangle' :
+                    type === 'info' ? 'fa-info-circle' : 'fa-check-circle';
+        const notification = `
+            <div class="alert ${alertClass} alert-dismissable animated fadeInDown">
+                <button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
+                <i class="fa ${icon}"></i> ${message}
+            </div>
+        `;
+        $('#notifications').html(notification);
+        setTimeout(() => {
+            $('#notifications .alert').fadeOut();
+        }, 5000);
+    }
+
+    // サジェスト表示
+    function showSuggestions(input, suggestions, type) {
+        const dropdown = input.closest('.form-group').find('.suggestions-dropdown');
+        dropdown.empty().hide();
+
+        if (suggestions.length === 0) {
+            dropdown.append('<div class="suggestion-item text-muted text-center">検索結果がありません</div>');
+            dropdown.show();
+            return;
+        }
+
+        suggestions.forEach(item => {
+            const div = $('<div class="suggestion-item"></div>')
+                .html(`<i class="fa fa-${type === 'client' ? 'building' : 'folder'} m-r-xs"></i> ${item.name}`)
+                .data('id', item.id)
+                .data('name', item.name);
+            
+            div.click(function() {
+                const id = $(this).data('id');
+                const name = $(this).data('name');
+                
+                input.val(name);
+                
+                if (type === 'client') {
+                    input.closest('.form-group').find('.client-id').val(id);
+                    const workItem = input.closest('.work-item-card');
+                    const projectInput = workItem.find('.project-input');
+                    const projectIdInput = workItem.find('.project-id');
+                    projectInput.prop('disabled', false).val('').focus();
+                    projectIdInput.val('');
+                    loadProjectSuggestions(workItem, id);
+                } else if (type === 'project') {
+                    input.closest('.form-group').find('.project-id').val(id);
+                }
+                
+                dropdown.hide();
+            });
+            
+            dropdown.append(div);
+        });
+
+        dropdown.show();
+    }
+
+    // 案件サジェスト読み込み
+    async function loadProjectSuggestions(workItem, clientId) {
+        const projectInput = workItem.find('.project-input');
+        try {
+            const projects = await searchProjects(clientId);
+            projectInput.data('allProjects', projects);
+        } catch (error) {
+            console.error('案件読み込みエラー:', error);
+        }
+    }
+
+    // 顧客入力イベント
+    $(document).on('input', '.client-input', async function() {
+        const input = $(this);
+        const query = input.val().trim();
+        
+        input.closest('.form-group').find('.client-id').val('');
+        
+        const workItem = input.closest('.work-item-card');
+        const projectInput = workItem.find('.project-input');
+        const projectIdInput = workItem.find('.project-id');
+        projectInput.prop('disabled', true).val('');
+        projectIdInput.val('');
+        workItem.find('.project-suggestions').hide();
+
+        if (query.length < 1) {
+            input.closest('.form-group').find('.client-suggestions').hide();
+            return;
+        }
+
+        input.addClass('loading');
+        try {
+            const clients = await searchClients(query);
+            showSuggestions(input, clients, 'client');
+        } finally {
+            input.removeClass('loading');
+        }
+    });
+
+    // 案件入力イベント
+    $(document).on('input', '.project-input', async function() {
+        const input = $(this);
+        const query = input.val().trim();
+        const workItem = input.closest('.work-item-card');
+        const clientId = workItem.find('.client-id').val();
+        
+        input.closest('.form-group').find('.project-id').val('');
+
+        if (!clientId) return;
+
+        if (query.length < 1) {
+            const allProjects = input.data('allProjects') || [];
+            showSuggestions(input, allProjects, 'project');
+            return;
+        }
+
+        input.addClass('loading');
+        try {
+            const projects = await searchProjects(clientId, query);
+            showSuggestions(input, projects, 'project');
+        } finally {
+            input.removeClass('loading');
+        }
+    });
+
+    // 案件入力フォーカス
+    $(document).on('focus', '.project-input', async function() {
+        const input = $(this);
+        const workItem = input.closest('.work-item-card');
+        const clientId = workItem.find('.client-id').val();
+        
+        if (!clientId) {
+            showNotification('error', '先に顧客を選択してください');
+            workItem.find('.client-input').focus();
+            return;
+        }
+
+        if (input.val().trim() === '') {
+            const allProjects = input.data('allProjects');
+            if (allProjects && allProjects.length > 0) {
+                showSuggestions(input, allProjects, 'project');
+            } else {
+                try {
+                    const projects = await searchProjects(clientId);
+                    input.data('allProjects', projects);
+                    showSuggestions(input, projects, 'project');
+                } catch (error) {
+                    console.error('案件読み込みエラー:', error);
+                }
+            }
+        }
+    });
+
+    // ドキュメントクリックでサジェスト非表示
+    $(document).on('click', function(e) {
+        if (!$(e.target).closest('.form-group').length) {
+            $('.suggestions-dropdown').hide();
+        }
+    });
+
+    // 作業追加ボタン
+    $('#addWorkBtn').click(function() {
+        const workItem = createWorkItem(workIndex);
+        $('#workList').append(workItem);
+        workIndex++;
+        updateWorkNumbers();
+        updateRemoveButtons();
+        calculateTotalHours();
+        
+        // 新しく追加した要素にフォーカス
+        $(`[data-work-index="${workIndex - 1}"]`).find('.client-input').focus();
+    });
+
+    // 作業削除ボタン
+    $(document).on('click', '.remove-work-btn', function() {
+        const workItem = $(this).closest('.work-item-card');
+        const workId = workItem.data('work-id');
+        
+        // 既存のレコード（DBに保存済み）の場合は、削除マークを付ける
+        if (workId) {
+            workItem.addClass('marked-for-deletion');
+            workItem.hide();
+        } else {
+            // 新規追加したものは完全に削除
+            workItem.fadeOut(300, function() {
+                $(this).remove();
+                updateWorkNumbers();
+                updateRemoveButtons();
+                calculateTotalHours();
+            });
+        }
+        
+        updateWorkNumbers();
+        updateRemoveButtons();
+        calculateTotalHours();
+    });
+
+    // 作業時間入力時
+    $(document).on('input', '.work-hours-input', function() {
+        const minutes = parseInt($(this).val()) || 0;
+        const hours = (minutes / 60).toFixed(1);
+        $(this).closest('.form-group').find('.hours-display').text(hours);
+        calculateTotalHours();
+    });
+
+    // 作業アイテム作成
+    function createWorkItem(index) {
+        return `
+            <div class="work-item-card animated fadeIn" data-work-index="${index}" data-work-id="">
+                <div class="panel panel-default">
+                    <div class="panel-heading bg-muted">
+                        <div class="row">
+                            <div class="col-xs-4">
+                                <h5 class="m-t-xs">
+                                    <i class="fa fa-briefcase text-info"></i> 
+                                    作業 #<span class="work-number">${index + 1}</span>
+                                </h5>
+                            </div>
+                            <div class="col-xs-8 text-right">
+                                <button type="button" class="btn btn-default btn-xs" disabled>
+                                    <i class="fa fa-moon-o"></i> 保存後に申請可能
+                                </button>
+                                <button type="button" class="btn btn-danger btn-xs remove-work-btn m-l-xs">
+                                    <i class="fa fa-times"></i> 削除
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="panel-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label class="control-label font-bold">
+                                        <i class="fa fa-building-o text-info"></i> 顧客名
+                                        <span class="text-danger">*</span>
+                                    </label>
+                                    <div class="input-group">
+                                        <span class="input-group-addon bg-white">
+                                            <i class="fa fa-search"></i>
+                                        </span>
+                                        <input type="text" 
+                                               class="form-control client-input" 
+                                               name="works[${index}][customer]" 
+                                               placeholder="顧客名を検索・入力" 
+                                               required 
+                                               autocomplete="off">
+                                        <input type="hidden" 
+                                               class="client-id" 
+                                               name="works[${index}][client_id]" 
+                                               value="">
+                                    </div>
+                                    <div class="suggestions-dropdown client-suggestions"></div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label class="control-label font-bold">
+                                        <i class="fa fa-folder-open-o text-success"></i> 案件名
+                                        <span class="text-danger">*</span>
+                                    </label>
+                                    <div class="input-group">
+                                        <span class="input-group-addon bg-white">
+                                            <i class="fa fa-search"></i>
+                                        </span>
+                                        <input type="text" 
+                                               class="form-control project-input" 
+                                               name="works[${index}][project]" 
+                                               placeholder="案件名を検索・入力" 
+                                               required 
+                                               autocomplete="off" 
+                                               disabled>
+                                        <input type="hidden" 
+                                               class="project-id" 
+                                               name="works[${index}][project_id]" 
+                                               value="">
+                                    </div>
+                                    <div class="suggestions-dropdown project-suggestions"></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label class="control-label font-bold">
+                                        <i class="fa fa-clock-o text-warning"></i> 作業時間
+                                        <span class="text-danger">*</span>
+                                    </label>
+                                    <div class="input-group">
+                                        <input type="number" 
+                                               class="form-control text-center work-hours-input" 
+                                               name="works[${index}][hours]" 
+                                               placeholder="0" 
+                                               step="15" 
+                                               min="0" 
+                                               max="1440" 
+                                               required>
+                                        <span class="input-group-addon bg-primary text-white">分</span>
+                                    </div>
+                                    <small class="text-muted">
+                                        <span class="hours-display">0</span> 時間
+                                    </small>
+                                </div>
+                            </div>
+                            <div class="col-md-8">
+                                <div class="form-group">
+                                    <label class="control-label font-bold">
+                                        <i class="fa fa-pencil text-muted"></i> 作業内容
+                                        <small class="text-muted">（任意）</small>
+                                    </label>
+                                    <textarea class="form-control" 
+                                              name="works[${index}][description]" 
+                                              rows="3" 
+                                              placeholder="実施した作業の詳細を記入"></textarea>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
+    // 作業番号更新
+    function updateWorkNumbers() {
+        let visibleIndex = 0;
+        $('.work-item-card').each(function(index) {
+            const workItem = $(this);
+            
+            // 削除マークが付いていない項目のみ番号を更新
+            if (!workItem.hasClass('marked-for-deletion')) {
+                workItem.find('.work-number').text(visibleIndex + 1);
+                workItem.attr('data-work-index', visibleIndex);
+                
+                // name属性も更新（削除マークが付いていない項目のみ）
+                workItem.find('input, textarea').each(function() {
+                    const name = $(this).attr('name');
+                    if (name && !name.includes('existing_work_ids')) {
+                        const newName = name.replace(/works\[\d+\]/, `works[${visibleIndex}]`);
+                        $(this).attr('name', newName);
+                    }
+                });
+                
+                // existing_work_ids のインデックスも更新
+                const existingWorkId = workItem.find('.existing-work-id');
+                if (existingWorkId.length) {
+                    existingWorkId.attr('name', `existing_work_ids[${visibleIndex}]`);
+                }
+                
+                visibleIndex++;
+            }
+        });
+    }
+
+    // 削除ボタン表示制御
+    function updateRemoveButtons() {
+        const visibleWorkItems = $('.work-item-card:not(.marked-for-deletion)');
+        if (visibleWorkItems.length <= 1) {
+            visibleWorkItems.find('.remove-work-btn').prop('disabled', true).addClass('disabled');
+        } else {
+            visibleWorkItems.find('.remove-work-btn').prop('disabled', false).removeClass('disabled');
+        }
+    }
+
+    // 合計時間計算
+    function calculateTotalHours() {
+        let totalMinutes = 0;
+        $('.work-item-card:not(.marked-for-deletion) .work-hours-input').each(function() {
+            const minutes = parseInt($(this).val()) || 0;
+            totalMinutes += minutes;
+        });
+        const totalHours = (totalMinutes / 60).toFixed(1);
+        $('#totalHours').text(totalHours);
+        
+        // 8時間を超えた場合の色変更
+        if (totalMinutes > 480) {
+            $('#totalHours').parent().parent().parent().removeClass('navy-bg').addClass('yellow-bg');
+        } else {
+            $('#totalHours').parent().parent().parent().removeClass('yellow-bg').addClass('navy-bg');
+        }
+        
+        // 24時間超過警告
+        if (totalMinutes > 1440) {
+            $('#totalHours').parent().parent().parent().removeClass('navy-bg yellow-bg').addClass('red-bg');
+        }
+    }
+
+    // フォーム送信時のバリデーション
+    $('#dailyReportForm').submit(function(e) {
+        const totalMinutes = parseFloat($('#totalHours').text()) * 60;
+        
+        if (totalMinutes > 1440) {
+            e.preventDefault();
+            showNotification('error', '合計作業時間が24時間を超えています');
+            return false;
+        }
+
+        let hasError = false;
+        let errorMessage = '';
+
+        $('.work-item-card:not(.marked-for-deletion)').each(function(index) {
+            const customer = $(this).find('.client-input').val();
+            const project = $(this).find('.project-input').val();
+            const hours = $(this).find('.work-hours-input').val();
+            const clientId = $(this).find('.client-id').val();
+            const projectId = $(this).find('.project-id').val();
+
+            if (!customer || !project || !hours || parseInt(hours) <= 0) {
+                hasError = true;
+                errorMessage = `作業 #${index + 1} の必須項目を入力してください`;
+                return false;
+            }
+
+            if (!clientId || !projectId) {
+                hasError = true;
+                errorMessage = `作業 #${index + 1} の顧客・案件を選択リストから選択してください`;
+                return false;
+            }
+        });
+
+        if (hasError) {
+            e.preventDefault();
+            showNotification('error', errorMessage);
+            return false;
+        }
+
+        // 削除マークが付いた項目を完全に削除してからフォーム送信
+        $('.work-item-card.marked-for-deletion').remove();
+
+        // 送信中表示
+        $(this).find('button[type="submit"]').prop('disabled', true)
+            .html('<i class="fa fa-spinner fa-spin"></i> 送信中...');
+    });
+
+    // 初期化処理
+    function initializePage() {
+        $('.work-item-card').each(function() {
+            const workItem = $(this);
+            const clientId = workItem.find('.client-id').val();
+            if (clientId) {
+                loadProjectSuggestions(workItem, clientId);
+            }
+            
+            // 初期時間表示
+            const minutes = parseInt(workItem.find('.work-hours-input').val()) || 0;
+            const hours = (minutes / 60).toFixed(1);
+            workItem.find('.hours-display').text(hours);
+        });
+
+        updateWorkNumbers();
+        updateRemoveButtons();
+        calculateTotalHours();
+    }
+
+    // ページ読み込み完了時
+    initializePage();
+});
+</script>

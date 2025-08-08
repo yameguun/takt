@@ -20,7 +20,7 @@ Rails.application.routes.draw do
   get 'auth/slack/callback', to: 'slack_authentications#create'
 
   # 日報を書く
-  post "reports" => "daily_reports#create"
+  resources :daily_reports, only: [:index, :create], path: "/reports"
 
   # 残業承認画面
   resources :overtime_requests, only: [:index] do

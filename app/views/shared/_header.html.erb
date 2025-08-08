@@ -9,7 +9,13 @@
       <li class="<%= active_class('welcome') %>">
         <a href="/">
           <i class="fa fa-th-large"></i>
-          <span class="nav-label">日報</span>
+          <span class="nav-label">ダッシュボード</span>
+        </a>
+      </li>
+      <li class="<%= active_class('daily_reports') %>">
+        <a href="/reports">
+          <i class="fa fa-calendar-o"></i>
+          <span class="nav-label">日報作成</span>
         </a>
       </li>
       <% if current_user.is_manager? %>

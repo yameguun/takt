@@ -1,5 +1,10 @@
 class DailyReportsController < BaseController
 
+  def index
+    @write_date = params[:report_date] || Date.today.strftime("%Y-%m-%d")
+    @daily_report = current_user.daily_reports.find_or_create_by(date: @write_date)
+  end
+
   def create
     @write_date = params[:report_date] || Date.today.strftime("%Y-%m-%d")
 
@@ -51,15 +56,15 @@ class DailyReportsController < BaseController
       @daily_report.update!(content: params[:report_content])
       
       flash[:success] = "日報を登録しました"
-      redirect_to root_path(report_date: @write_date)
+      redirect_to daily_reports_path(report_date: @write_date)
     end
     
   rescue ActiveRecord::RecordInvalid => e
     flash[:danger] = e.record.errors.full_messages.join(", ")
-    redirect_to root_path(report_date: @write_date)
+    redirect_to daily_reports_path(report_date: @write_date)
   rescue => e
     flash[:danger] = "予期せぬエラーが発生しました: #{e.message}"
-    redirect_to root_path(report_date: @write_date)
+    redirect_to daily_reports_path(report_date: @write_date)
   end
 
   private
