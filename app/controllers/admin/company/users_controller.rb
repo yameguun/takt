@@ -1,6 +1,7 @@
+# app/controllers/admin/company/users_controller.rb
 class Admin::Company::UsersController < Admin::ApplicationController
   before_action :set_company
-  before_action :set_user, only: %i[edit update]
+  before_action :set_user, only: %i[edit update remove_avatar]
 
   def index
     @users = @company.users.order(created_at: :desc).page(params[:page])
@@ -18,10 +19,17 @@ class Admin::Company::UsersController < Admin::ApplicationController
     end
   end
 
+  # 画像削除アクション
+  def remove_avatar
+    @user.avatar.purge
+    redirect_to edit_admin_company_user_path(@company, @user), 
+                flash: {success: "画像を削除しました"}
+  end
+
   private
 
   def user_params
-    params.require(:user).permit(:company_id, :department_id, :name, :unit_price, :permission)
+    params.require(:user).permit(:company_id, :department_id, :name, :unit_price, :permission, :avatar)
   end
 
   def set_company

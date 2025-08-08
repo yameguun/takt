@@ -37,6 +37,7 @@ class User < ApplicationRecord
 
   validates :email, presence: true, uniqueness: true, format: { with: URI::MailTo::EMAIL_REGEXP }
   validates :unit_price, presence: true, numericality: true
+  validate :acceptable_image
 
   def is_manager?
     self.permission >= 0
@@ -58,5 +59,20 @@ class User < ApplicationRecord
       format: :webp,
       saver: { quality: 85 }
     ).processed
+  end
+
+  private
+
+  def acceptable_image
+    return unless avatar.attached?
+    
+    unless avatar.blob.byte_size <= 5.megabyte
+      errors.add(:avatar, "は5MB以下にしてください")
+    end
+    
+    acceptable_types = ["image/jpeg", "image/jpg", "image/png", "image/gif", "image/webp"]
+    unless acceptable_types.include?(avatar.blob.content_type)
+      errors.add(:avatar, "はJPEG、PNG、GIF、WebP形式でアップロードしてください")
+    end
   end
 end

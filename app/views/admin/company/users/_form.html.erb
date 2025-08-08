@@ -1,5 +1,66 @@
-<%= form_for @user, url: admin_company_user_path(@company,@user) , html: {class: 'form-horizontal'} do |f| %>
+<!-- app/views/admin/company/users/edit.html.erb -->
+<%= form_for @user, url: admin_company_user_path(@company, @user), html: {class: 'form-horizontal', multipart: true} do |f| %>
 
+  <!-- プロフィール画像セクション -->
+  <div class="form-group">
+    <label class="col-sm-2 control-label">プロフィール画像</label>
+    <div class="col-sm-10">
+      <div class="row">
+        <div class="col-sm-4">
+          <!-- 現在の画像を表示 -->
+          <% if @user.avatar.attached? %>
+            <div class="m-b">
+              <%= image_tag @user.avatar, 
+                  class: "img-responsive img-thumbnail", 
+                  style: "max-width: 200px;",
+                  alt: @user.name %>
+              <p class="m-t-xs text-muted">現在の画像</p>
+              <!-- 削除ボタン -->
+              <%= link_to remove_avatar_admin_company_user_path(@company, @user), 
+                  data: { turbo_method: :delete, confirm: "画像を削除してもよろしいですか？" },
+                  class: "btn btn-danger btn-xs" do %>
+                <i class="fa fa-trash"></i> 画像を削除
+              <% end %>
+            </div>
+          <% else %>
+            <div class="m-b">
+              <%= image_tag "https://via.placeholder.com/200x200/f8f8f9/676a6c?text=No+Image", 
+                  class: "img-responsive img-thumbnail",
+                  style: "max-width: 200px;" %>
+              <p class="m-t-xs text-muted">画像が設定されていません</p>
+            </div>
+          <% end %>
+        </div>
+        <div class="col-sm-8">
+          <!-- ファイル選択 -->
+          <div class="m-b">
+            <%= f.file_field :avatar, 
+                class: 'form-control', 
+                accept: 'image/jpeg,image/jpg,image/png,image/gif,image/webp',
+                id: 'avatar-upload' %>
+            <span class="help-block m-b-none">
+              <i class="fa fa-info-circle"></i> 
+              対応形式: JPEG, PNG, GIF, WebP（最大5MB）
+            </span>
+          </div>
+          
+          <!-- プレビューエリア -->
+          <div id="preview-container" style="display: none;">
+            <p class="text-muted">プレビュー:</p>
+            <img id="preview-image" class="img-responsive img-thumbnail" style="max-width: 200px;">
+          </div>
+        </div>
+      </div>
+      
+      <% if f.object.errors.include?(:avatar) %>
+        <p style="color: red;"><%= f.object.errors.full_messages_for(:avatar).first %></p>
+      <% end %>
+    </div>
+  </div>
+
+  <div class="hr-line-dashed"></div>
+
+  <!-- 以下、既存のフォームフィールド -->
   <div class="form-group">
     <label class="col-sm-2 control-label">会社名</label>
     <div class="col-sm-10">
@@ -13,37 +74,64 @@
       <%= f.select :department_id, @company.departments.map{|o| [o.name, o.id]}, {}, {class: 'form-control'} %>
     </div>
   </div>
+  
   <div class="form-group">
     <label class="col-sm-2 control-label">氏名</label>
     <div class="col-sm-10">
       <%= f.text_field :name, class: 'form-control', placeholder: '三角太郎' %>
       <% if f.object.errors.include?(:name) %>
-      <p style="color: red;"><%= f.object.errors.full_messages_for(:name).first %>
+        <p style="color: red;"><%= f.object.errors.full_messages_for(:name).first %></p>
       <% end %>
     </div>
   </div>
+  
   <div class="form-group">
     <label class="col-sm-2 control-label">時間単価</label>
     <div class="col-sm-10">
       <%= f.number_field :unit_price, class: 'form-control' %>
       <% if f.object.errors.include?(:unit_price) %>
-      <p style="color: red;"><%= f.object.errors.full_messages_for(:unit_price).first %>
+        <p style="color: red;"><%= f.object.errors.full_messages_for(:unit_price).first %></p>
       <% end %>
     </div>
   </div>
+  
   <div class="form-group">
     <label class="col-sm-2 control-label">権限</label>
     <div class="col-sm-10">
       <%= f.number_field :permission, class: 'form-control' %>
       <% if f.object.errors.include?(:permission) %>
-      <p style="color: red;"><%= f.object.errors.full_messages_for(:permission).first %>
+        <p style="color: red;"><%= f.object.errors.full_messages_for(:permission).first %></p>
       <% end %>
     </div>
   </div>
+  
   <div class="hr-line-dashed"></div>
+  
   <div class="form-group">
     <div class="col-sm-4 col-sm-offset-2">
-      <button class="btn btn-primary" type="submit"><%= @user.new_record?? "登録する" : "更新する"%></button>
+      <button class="btn btn-primary" type="submit">
+        <i class="fa fa-save"></i> <%= @user.new_record? ? "登録する" : "更新する" %>
+      </button>
+      <%= link_to "キャンセル", admin_company_users_path(@company), class: "btn btn-white" %>
     </div>
   </div>
 <% end %>
+
+<script>
+$(document).ready(function() {
+  // 画像プレビュー機能
+  $('#avatar-upload').on('change', function(e) {
+    var file = e.target.files[0];
+    if (file && file.type.match('image.*')) {
+      var reader = new FileReader();
+      reader.onload = function(e) {
+        $('#preview-image').attr('src', e.target.result);
+        $('#preview-container').show();
+      };
+      reader.readAsDataURL(file);
+    } else {
+      $('#preview-container').hide();
+    }
+  });
+});
+</script>

@@ -48,7 +48,11 @@ Rails.application.routes.draw do
     delete "logout" => "sessions#destroy"
     scope module: :company do
       resources :companies, except: [:show] do
-        resources :users, except: [:new, :create, :show]
+        resources :users, except: [:new, :create, :show] do
+          member do
+            delete :remove_avatar
+          end
+        end
         resources :departments, except: [:show]
         resources :clients, except: [:show] do
           resources :projects, except: [:show]
