@@ -4,7 +4,7 @@ class DailyReportsController < BaseController
     @write_date = params[:report_date] || Date.today.strftime("%Y-%m-%d")
 
     ActiveRecord::Base.transaction do
-      @daily_report = current_user.daily_reports.find_or_initialize_by(date: @write_date)
+      @daily_report = current_user.daily_reports.find_or_create_by(date: @write_date)
       @daily_report.daily_report_projects.destroy_all
 
       if @daily_report.update(daily_report_params)

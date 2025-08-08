@@ -2,14 +2,16 @@
 #
 # Table name: daily_report_projects
 #
-#  id              :bigint           not null, primary key
-#  description     :text(65535)
-#  hours           :integer          default(0), not null
-#  created_at      :datetime         not null
-#  updated_at      :datetime         not null
-#  client_id       :bigint           not null
-#  daily_report_id :bigint           not null
-#  project_id      :bigint           not null
+#  id                    :bigint           not null, primary key
+#  description           :text(65535)
+#  hours                 :integer          default(0), not null
+#  is_overtime_approved  :boolean          default(FALSE), not null
+#  is_overtime_requested :boolean          default(FALSE), not null
+#  created_at            :datetime         not null
+#  updated_at            :datetime         not null
+#  client_id             :bigint           not null
+#  daily_report_id       :bigint           not null
+#  project_id            :bigint           not null
 #
 # Indexes
 #
