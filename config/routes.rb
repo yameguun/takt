@@ -1,7 +1,4 @@
 Rails.application.routes.draw do
-  get "slack_authentications/new"
-  get "slack_authentications/create"
-
   # Define your application routes per the DSL in https://guides.rubyonrails.org/routing.html
 
   # Reveal health status on /up that returns 200 if the app boots with no exceptions, otherwise 500.
@@ -24,6 +21,9 @@ Rails.application.routes.draw do
 
   # 日報を書く
   post "reports" => "daily_reports#create"
+
+  # 残業承認画面
+  get "overtime-requests" => "overtime_requests#index"
 
   namespace :api do
     resources :clients, only: [:index]

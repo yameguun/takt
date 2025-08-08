@@ -12,6 +12,14 @@
           <span class="nav-label">日報</span>
         </a>
       </li>
+      <% if current_user.is_manager? %>
+      <li class="<%= active_class('overtime_requests') %>">
+        <%= link_to overtime_requests_path do %>
+          <i class="fa fa-fire"></i>
+          <span class="nav-label">残業申請の承認</span>
+        <% end %>
+      </li>
+      <% end %>
     </ul>
   </div>
 </nav>

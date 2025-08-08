@@ -1,0 +1,64 @@
+<% provide(:title, "残業申請の承認") %>
+<div id="wrapper">
+  <%= render 'shared/header' %>
+  <div id="page-wrapper" class="gray-bg">
+    <%= render 'shared/navbar' %>
+    
+    <!-- ヘッダー部分 -->
+    <div class="row wrapper border-bottom white-bg page-heading">
+      <div class="col-lg-12">
+        <h2 class="m-t-md">
+          <i class="fa fa-fire text-navy"></i> 残業申請の承認
+        </h2>
+        <ol class="breadcrumb">
+          <li class="breadcrumb-item">
+            <a href="/">ホーム</a>
+          </li>
+          <li class="breadcrumb-item active">
+            <strong>残業申請の承認</strong>
+          </li>
+        </ol>
+      </div>
+    </div>
+
+    <!-- メインコンテンツ -->
+    <div class="wrapper wrapper-content animated fadeInRight">
+      <div class="row">
+        <div class="col-lg-10">
+          <div class="ibox float-e-margins">
+            <div class="ibox-content">
+              <table class="table table-bordered">
+                <thead>
+                  <tr>
+                    <th>取引先</th>
+                    <th>案件名</th>
+                    <th>作業内容</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <% @daily_report_projects.each do |project| %>
+                    <tr>
+                      <td><%= project.client_name %></td>
+                      <td><%= project.project_name %></td>
+                      <td class="description-cell"><%= project.description %></td>
+                    </tr>
+                  <% end %>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <%= render 'shared/footer' %>
+  </div>
+</div>
+
+<style>
+  .description-cell {
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    max-width: 400px;
+    line-height: 1.5;
+  }
+</style>

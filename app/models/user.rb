@@ -35,4 +35,8 @@ class User < ApplicationRecord
 
   validates :email, presence: true, uniqueness: true, format: { with: URI::MailTo::EMAIL_REGEXP }
   validates :unit_price, presence: true, numericality: true
+
+  def is_manager?
+    self.permission > 0
+  end
 end
