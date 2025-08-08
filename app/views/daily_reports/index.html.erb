@@ -627,11 +627,6 @@ $(document).ready(function() {
                 }
                 
             } else if (currentStatus === 'pending') {
-                // 申請を取り消す確認
-                if (!confirm(`作業 #${workIndex} の残業申請を取り消しますか？`)) {
-                    btn.prop('disabled', false);
-                    return;
-                }
                 
                 btn.html('<i class="fa fa-spinner fa-spin"></i> 取消中...');
                 
