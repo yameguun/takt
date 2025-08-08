@@ -28,6 +28,12 @@ Rails.application.routes.draw do
   namespace :api do
     resources :clients, only: [:index]
     resources :projects, only: [:index]
+    resources :daily_report_projects do
+      member do
+        post :request_overtime
+        delete :cancel_overtime
+      end
+    end
   end
 
   # 管理者

@@ -24,6 +24,9 @@
 
     <!-- メインコンテンツ -->
     <div class="wrapper wrapper-content animated fadeInRight">
+      <!-- 通知エリア -->
+      <div id="notifications"></div>
+      
       <form action="/reports" method="POST" id="dailyReportForm" data-turbo="false">
         <%= hidden_field_tag :authenticity_token, form_authenticity_token %>
         
@@ -67,18 +70,45 @@
                 <div id="workList">
                   <% works = @daily_report.daily_report_projects.presence || [@daily_report.daily_report_projects.build] %>
                   <% works.each_with_index do |work, index| %>
-                    <div class="work-item-card animated fadeIn" data-work-index="<%= index %>">
+                    <div class="work-item-card animated fadeIn" data-work-index="<%= index %>" data-work-id="<%= work.id %>">
                       <div class="panel panel-default">
                         <div class="panel-heading bg-muted">
                           <div class="row">
-                            <div class="col-xs-6">
+                            <div class="col-xs-4">
                               <h5 class="m-t-xs">
                                 <i class="fa fa-briefcase text-info"></i> 
                                 作業 #<span class="work-number"><%= index + 1 %></span>
                               </h5>
                             </div>
-                            <div class="col-xs-6 text-right">
-                              <button type="button" class="btn btn-danger btn-xs remove-work-btn">
+                            <div class="col-xs-8 text-right">
+                              <!-- 残業申請ボタン -->
+                              <% if work.persisted? %>
+                                <% if work.is_overtime_approved %>
+                                  <button type="button" class="btn btn-success btn-xs" disabled>
+                                    <i class="fa fa-check-circle"></i> 残業承認済み
+                                  </button>
+                                <% elsif work.is_overtime_requested %>
+                                  <button type="button" class="btn btn-warning btn-xs overtime-btn" 
+                                          data-status="pending" 
+                                          data-work-id="<%= work.id %>"
+                                          data-work-index="<%= index + 1 %>">
+                                    <i class="fa fa-clock-o"></i> 承認待ち
+                                  </button>
+                                <% else %>
+                                  <button type="button" class="btn btn-primary btn-xs overtime-btn" 
+                                          data-status="not_requested"
+                                          data-work-id="<%= work.id %>"
+                                          data-work-index="<%= index + 1 %>">
+                                    <i class="fa fa-moon-o"></i> 残業申請
+                                  </button>
+                                <% end %>
+                              <% else %>
+                                <button type="button" class="btn btn-default btn-xs" disabled>
+                                  <i class="fa fa-moon-o"></i> 保存後に申請可能
+                                </button>
+                              <% end %>
+                              
+                              <button type="button" class="btn btn-danger btn-xs remove-work-btn m-l-xs">
                                 <i class="fa fa-times"></i> 削除
                               </button>
                             </div>
@@ -182,6 +212,18 @@
                               </div>
                             </div>
                           </div>
+
+                          <!-- 残業申請状態の表示 -->
+                          <% if work.is_overtime_requested || work.is_overtime_approved %>
+                            <div class="row">
+                              <div class="col-md-12">
+                                <div class="alert <%= work.is_overtime_approved ? 'alert-success' : 'alert-warning' %> m-t-sm m-b-none">
+                                  <i class="fa <%= work.is_overtime_approved ? 'fa-check-circle' : 'fa-clock-o' %>"></i>
+                                  この作業は残業として<%= work.is_overtime_approved ? '承認されています' : '申請中です' %>
+                                </div>
+                              </div>
+                            </div>
+                          <% end %>
                         </div>
                       </div>
                     </div>
@@ -344,6 +386,34 @@
   color: #1ab394;
 }
 
+/* 残業申請ボタンスタイル */
+.overtime-btn {
+  min-width: 90px;
+}
+
+.overtime-btn:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
+/* アラートスタイル */
+.alert-warning {
+  background-color: #fcf8e3;
+  border-color: #faebcc;
+  color: #8a6d3b;
+}
+
+.alert-success {
+  background-color: #d4edda;
+  border-color: #c3e6cb;
+  color: #155724;
+}
+
+.yellow-bg {
+  background-color: #f8ac59 !important;
+  color: white;
+}
+
 /* レスポンシブ対応 */
 @media (max-width: 768px) {
   .ibox-tools .btn {
@@ -371,6 +441,11 @@
   .wrapper-content {
     padding: 15px 10px;
   }
+  
+  .overtime-btn {
+    min-width: auto;
+    margin-bottom: 5px;
+  }
 }
 
 @media (max-width: 480px) {
@@ -381,6 +456,16 @@
   .remove-work-btn {
     padding: 2px 6px;
     font-size: 11px;
+  }
+  
+  .panel-heading .col-xs-4 {
+    width: 100%;
+  }
+  
+  .panel-heading .col-xs-8 {
+    width: 100%;
+    text-align: left !important;
+    margin-top: 10px;
   }
 }
 
@@ -432,6 +517,18 @@
   background-color: #1ab394 !important;
   border-color: #1ab394;
 }
+
+.m-l-xs {
+  margin-left: 5px;
+}
+
+.m-t-sm {
+  margin-top: 10px;
+}
+
+.m-b-none {
+  margin-bottom: 0;
+}
 </style>
 
 <script>
@@ -445,6 +542,121 @@ $(document).ready(function() {
         if (selectedDate) {
             const currentPath = window.location.pathname;
             window.location.href = `${currentPath}?report_date=${selectedDate}`;
+        }
+    });
+
+    // 残業申請ボタンの処理（作業単位）
+    $(document).on('click', '.overtime-btn', async function() {
+        const btn = $(this);
+        const currentStatus = btn.data('status');
+        const workId = btn.data('work-id');
+        const workIndex = btn.data('work-index');
+        const reportDate = $('#reportDate').val();
+        
+        if (!workId) {
+            showNotification('error', 'この作業は保存されていません。日報を提出してから残業申請してください。');
+            return;
+        }
+        
+        // ボタンを無効化
+        btn.prop('disabled', true);
+        
+        try {
+            let response;
+            
+            if (currentStatus === 'not_requested') {
+                // 残業申請を送信
+                btn.html('<i class="fa fa-spinner fa-spin"></i> 申請中...');
+                
+                response = await fetch(`/api/daily_report_projects/${workId}/request_overtime`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-Token': $('[name="authenticity_token"]').val()
+                    },
+                    body: JSON.stringify({
+                        report_date: reportDate,
+                        work_index: workIndex
+                    })
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    
+                    // ボタンを承認待ち状態に変更
+                    btn.removeClass('btn-primary').addClass('btn-warning');
+                    btn.html('<i class="fa fa-clock-o"></i> 承認待ち');
+                    btn.data('status', 'pending');
+                    
+                    // アラート表示を追加
+                    const alertHtml = `
+                        <div class="row">
+                            <div class="col-md-12">
+                                <div class="alert alert-warning m-t-sm m-b-none">
+                                    <i class="fa fa-clock-o"></i>
+                                    この作業は残業として申請中です
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    btn.closest('.panel-body').append(alertHtml);
+                    
+                    showNotification('success', data.message);
+                } else {
+                    throw new Error('申請に失敗しました');
+                }
+                
+            } else if (currentStatus === 'pending') {
+                // 申請を取り消す確認
+                if (!confirm(`作業 #${workIndex} の残業申請を取り消しますか？`)) {
+                    btn.prop('disabled', false);
+                    return;
+                }
+                
+                btn.html('<i class="fa fa-spinner fa-spin"></i> 取消中...');
+                
+                response = await fetch(`/api/daily_report_projects/${workId}/cancel_overtime`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-Token': $('[name="authenticity_token"]').val()
+                    },
+                    body: JSON.stringify({
+                        report_date: reportDate,
+                        work_index: workIndex
+                    })
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    
+                    // ボタンを未申請状態に戻す
+                    btn.removeClass('btn-warning').addClass('btn-primary');
+                    btn.html('<i class="fa fa-moon-o"></i> 残業申請');
+                    btn.data('status', 'not_requested');
+                    
+                    // アラート表示を削除
+                    btn.closest('.panel-body').find('.alert').parent().parent().remove();
+                    
+                    showNotification('info', data.message);
+                } else {
+                    throw new Error('取消に失敗しました');
+                }
+            }
+            
+        } catch (error) {
+            console.error('残業申請エラー:', error);
+            showNotification('error', error.message || '処理中にエラーが発生しました');
+            
+            // エラー時はボタンを元に戻す
+            if (currentStatus === 'not_requested') {
+                btn.html('<i class="fa fa-moon-o"></i> 残業申請');
+            } else {
+                btn.html('<i class="fa fa-clock-o"></i> 承認待ち');
+            }
+        } finally {
+            // ボタンを有効化
+            btn.prop('disabled', false);
         }
     });
 
@@ -478,8 +690,12 @@ $(document).ready(function() {
 
     // 通知表示
     function showNotification(type, message) {
-        const alertClass = type === 'error' ? 'alert-danger' : 'alert-success';
-        const icon = type === 'error' ? 'fa-exclamation-circle' : 'fa-check-circle';
+        const alertClass = type === 'error' ? 'alert-danger' : 
+                         type === 'warning' ? 'alert-warning' : 
+                         type === 'info' ? 'alert-info' : 'alert-success';
+        const icon = type === 'error' ? 'fa-exclamation-circle' : 
+                    type === 'warning' ? 'fa-exclamation-triangle' :
+                    type === 'info' ? 'fa-info-circle' : 'fa-check-circle';
         const notification = `
             <div class="alert ${alertClass} alert-dismissable animated fadeInDown">
                 <button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
@@ -671,18 +887,21 @@ $(document).ready(function() {
     // 作業アイテム作成
     function createWorkItem(index) {
         return `
-            <div class="work-item-card animated fadeIn" data-work-index="${index}">
+            <div class="work-item-card animated fadeIn" data-work-index="${index}" data-work-id="">
                 <div class="panel panel-default">
                     <div class="panel-heading bg-muted">
                         <div class="row">
-                            <div class="col-xs-6">
+                            <div class="col-xs-4">
                                 <h5 class="m-t-xs">
                                     <i class="fa fa-briefcase text-info"></i> 
                                     作業 #<span class="work-number">${index + 1}</span>
                                 </h5>
                             </div>
-                            <div class="col-xs-6 text-right">
-                                <button type="button" class="btn btn-danger btn-xs remove-work-btn">
+                            <div class="col-xs-8 text-right">
+                                <button type="button" class="btn btn-default btn-xs" disabled>
+                                    <i class="fa fa-moon-o"></i> 保存後に申請可能
+                                </button>
+                                <button type="button" class="btn btn-danger btn-xs remove-work-btn m-l-xs">
                                     <i class="fa fa-times"></i> 削除
                                 </button>
                             </div>
@@ -819,11 +1038,16 @@ $(document).ready(function() {
         const totalHours = (totalMinutes / 60).toFixed(1);
         $('#totalHours').text(totalHours);
         
+        // 8時間を超えた場合の色変更（視覚的なフィードバックのみ）
+        if (totalMinutes > 480) {
+            $('#totalHours').parent().parent().parent().removeClass('navy-bg').addClass('yellow-bg');
+        } else {
+            $('#totalHours').parent().parent().parent().removeClass('yellow-bg').addClass('navy-bg');
+        }
+        
         // 24時間超過警告
         if (totalMinutes > 1440) {
-            $('#totalHours').parent().parent().parent().removeClass('navy-bg').addClass('red-bg');
-        } else {
-            $('#totalHours').parent().parent().parent().removeClass('red-bg').addClass('navy-bg');
+            $('#totalHours').parent().parent().parent().removeClass('navy-bg yellow-bg').addClass('red-bg');
         }
     }
 
