@@ -123,12 +123,6 @@
                               <i class="fa fa-calendar-o text-muted"></i>
                               <span class="text-muted">未来</span>
                             </div>
-                          <% elsif is_weekend %>
-                            <!-- 週末 -->
-                            <div class="status-item weekend-status">
-                              <i class="fa fa-home text-info"></i>
-                              <span class="text-info">休日</span>
-                            </div>
                           <% else %>
                             <!-- 平日の処理 -->
                             <% if has_report && report.content.present? %>
@@ -158,7 +152,7 @@
                           <% end %>
                           
                           <!-- アクションボタン（平日のみ） -->
-                          <% if !is_weekend && !is_future %>
+                          <% if !is_future %>
                             <div class="day-actions">
                               <% if has_report && report.content.present? %>
                                 <%= link_to daily_reports_path(report_date: date.strftime('%Y-%m-%d')), 
