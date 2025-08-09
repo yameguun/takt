@@ -22,6 +22,9 @@ Rails.application.routes.draw do
   # 日報を書く
   resources :daily_reports, only: [:index, :create], path: "/reports"
 
+  # カレンダー
+  resources :calendars, only: [:index]
+
   # 残業承認画面
   resources :overtime_requests, only: [:index] do
     member do

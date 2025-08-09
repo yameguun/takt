@@ -14,8 +14,14 @@
       </li>
       <li class="<%= active_class('daily_reports') %>">
         <a href="/reports">
-          <i class="fa fa-calendar-o"></i>
+          <i class="fa fa-edit"></i>
           <span class="nav-label">日報作成</span>
+        </a>
+      </li>
+      <li class="<%= active_class('calendars') %>">
+        <a href="/calendars">
+          <i class="fa fa-calendar-o"></i>
+          <span class="nav-label">カレンダー</span>
         </a>
       </li>
       <% if current_user.is_manager? %>
