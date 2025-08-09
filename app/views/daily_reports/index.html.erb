@@ -235,17 +235,23 @@
                   <% end %>
                 </div>
 
-                <!-- 合計時間表示 -->
+                <!-- 合計時間表示（改善されたデザイン） -->
                 <div class="row m-t-lg">
                   <div class="col-lg-12">
-                    <div class="widget style1 navy-bg">
+                    <div id="totalHoursWidget" class="widget style1 total-hours-summary status-normal">
                       <div class="row">
                         <div class="col-xs-4">
-                          <i class="fa fa-clock-o fa-3x"></i>
+                          <i class="fa fa-clock-o fa-3x summary-icon"></i>
                         </div>
                         <div class="col-xs-8 text-right">
-                          <span class="font-bold">本日の合計作業時間</span>
+                          <span class="font-bold">
+                            本日の合計作業時間
+                            <span id="statusBadge" class="status-badge" style="display:none;"></span>
+                          </span>
                           <h2 class="font-bold"><span id="totalHours">0.0</span> 時間</h2>
+                          <div class="progress progress-mini m-t-xs">
+                            <div id="progressBar" class="progress-bar" style="width:0%"></div>
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -299,7 +305,7 @@
 </div>
 
 <style>
-/* カスタムスタイル */
+/* 既存のカスタムスタイル */
 .work-item-card {
   margin-bottom: 20px;
 }
@@ -414,14 +420,93 @@
   color: #155724;
 }
 
-.yellow-bg {
-  background-color: #f8ac59 !important;
-  color: white;
+/* ===== 新しい合計時間ウィジェットデザイン ===== */
+.total-hours-summary {
+  background: #ffffff !important;
+  color: inherit !important;
+  border: 1px solid #e7eaec;
+  border-left: 5px solid #1ab394;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.08);
+  transition: all 0.3s ease;
 }
 
-.red-bg {
-  background-color: #ed5565 !important;
-  color: white;
+.total-hours-summary h2,
+.total-hours-summary span,
+.total-hours-summary i {
+  color: inherit !important;
+}
+
+/* ステータス別の色設定 */
+.total-hours-summary.status-normal {
+  border-left-color: #1ab394;
+}
+
+.total-hours-summary.status-normal .summary-icon {
+  color: #1ab394;
+}
+
+.total-hours-summary.status-normal .progress-bar {
+  background-color: #1ab394;
+}
+
+.total-hours-summary.status-warning {
+  border-left-color: #f8ac59;
+  box-shadow: 0 2px 8px rgba(248, 172, 89, 0.2);
+}
+
+.total-hours-summary.status-warning .summary-icon {
+  color: #f8ac59;
+}
+
+.total-hours-summary.status-warning .progress-bar {
+  background-color: #f8ac59;
+}
+
+.total-hours-summary.status-danger {
+  border-left-color: #ed5565;
+  box-shadow: 0 2px 8px rgba(237, 85, 101, 0.3);
+}
+
+.total-hours-summary.status-danger .summary-icon {
+  color: #ed5565;
+}
+
+.total-hours-summary.status-danger .progress-bar {
+  background-color: #ed5565;
+}
+
+/* ステータスバッジ */
+.status-badge {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 2px 8px;
+  font-size: 10px;
+  font-weight: bold;
+  border-radius: 12px;
+  background: rgba(0,0,0,0.1);
+  color: #555;
+}
+
+.status-warning .status-badge {
+  background: rgba(248, 172, 89, 0.2);
+  color: #d4941e;
+}
+
+.status-danger .status-badge {
+  background: rgba(237, 85, 101, 0.2);
+  color: #c92a3a;
+}
+
+/* プログレスバーの調整 */
+.progress-mini {
+  height: 3px;
+  margin-bottom: 0;
+  background: rgba(0,0,0,0.05);
+  border-radius: 2px;
+}
+
+.progress-mini .progress-bar {
+  transition: width 0.3s ease;
 }
 
 /* レスポンシブ対応 */
@@ -455,6 +540,16 @@
   .overtime-btn {
     min-width: auto;
     margin-bottom: 5px;
+  }
+  
+  .total-hours-summary {
+    border-left-width: 4px;
+  }
+  
+  .status-badge {
+    display: block;
+    margin: 5px 0 0 0;
+    text-align: center;
   }
 }
 
@@ -915,14 +1010,14 @@ $(document).ready(function() {
     // 作業アイテム作成
     function createWorkItem(index) {
         return `
-            <div class="work-item-card animated fadeIn" data-work-index="${index}" data-work-id="">
+            <div class="work-item-card animated fadeIn" data-work-index="\${index}" data-work-id="">
                 <div class="panel panel-default">
                     <div class="panel-heading bg-muted">
                         <div class="row">
                             <div class="col-xs-4">
                                 <h5 class="m-t-xs">
                                     <i class="fa fa-briefcase text-info"></i> 
-                                    作業 #<span class="work-number">${index + 1}</span>
+                                    作業 #<span class="work-number">\${index + 1}</span>
                                 </h5>
                             </div>
                             <div class="col-xs-8 text-right">
@@ -949,13 +1044,13 @@ $(document).ready(function() {
                                         </span>
                                         <input type="text" 
                                                class="form-control client-input" 
-                                               name="works[${index}][customer]" 
+                                               name="works[\${index}][customer]" 
                                                placeholder="顧客名を検索・入力" 
                                                required 
                                                autocomplete="off">
                                         <input type="hidden" 
                                                class="client-id" 
-                                               name="works[${index}][client_id]" 
+                                               name="works[\${index}][client_id]" 
                                                value="">
                                     </div>
                                     <div class="suggestions-dropdown client-suggestions"></div>
@@ -973,14 +1068,14 @@ $(document).ready(function() {
                                         </span>
                                         <input type="text" 
                                                class="form-control project-input" 
-                                               name="works[${index}][project]" 
+                                               name="works[\${index}][project]" 
                                                placeholder="案件名を検索・入力" 
                                                required 
                                                autocomplete="off" 
                                                disabled>
                                         <input type="hidden" 
                                                class="project-id" 
-                                               name="works[${index}][project_id]" 
+                                               name="works[\${index}][project_id]" 
                                                value="">
                                     </div>
                                     <div class="suggestions-dropdown project-suggestions"></div>
@@ -997,7 +1092,7 @@ $(document).ready(function() {
                                     <div class="input-group">
                                         <input type="number" 
                                                class="form-control text-center work-hours-input" 
-                                               name="works[${index}][minutes]" 
+                                               name="works[\${index}][minutes]" 
                                                placeholder="0" 
                                                step="15" 
                                                min="0" 
@@ -1017,7 +1112,7 @@ $(document).ready(function() {
                                         <small class="text-muted">（任意）</small>
                                     </label>
                                     <textarea class="form-control" 
-                                              name="works[${index}][description]" 
+                                              name="works[\${index}][description]" 
                                               rows="3" 
                                               placeholder="実施した作業の詳細を記入"></textarea>
                                 </div>
@@ -1070,7 +1165,7 @@ $(document).ready(function() {
         }
     }
 
-    // 合計時間計算
+    // ===== 合計時間計算（新デザイン版） =====
     function calculateTotalHours() {
         let totalMinutes = 0;
         $('.work-item-card:not(.marked-for-deletion) .work-hours-input').each(function() {
@@ -1080,16 +1175,30 @@ $(document).ready(function() {
         const totalHours = (totalMinutes / 60).toFixed(1);
         $('#totalHours').text(totalHours);
         
-        // 8時間を超えた場合の色変更
-        if (totalMinutes > 480) {
-            $('#totalHours').parent().parent().parent().removeClass('navy-bg').addClass('yellow-bg');
-        } else {
-            $('#totalHours').parent().parent().parent().removeClass('yellow-bg').addClass('navy-bg');
-        }
+        // プログレスバー（0-8時間の進捗）
+        const progressPercent = Math.min((totalMinutes / 480) * 100, 100);
+        $('#progressBar').css('width', progressPercent + '%');
         
-        // 24時間超過警告
+        // ウィジェットとバッジの取得
+        const $widget = $('#totalHoursWidget');
+        const $badge = $('#statusBadge');
+        
+        // 既存のステータスクラスを削除
+        $widget.removeClass('status-normal status-warning status-danger');
+        $badge.hide().text('');
+        
+        // ステータス判定と表示
         if (totalMinutes > 1440) {
-            $('#totalHours').parent().parent().parent().removeClass('navy-bg yellow-bg').addClass('red-bg');
+            // 24時間超過（危険）
+            $widget.addClass('status-danger');
+            $badge.text('要確認').show();
+        } else if (totalMinutes > 480) {
+            // 8時間超過（警告）
+            $widget.addClass('status-warning');
+            $badge.text('残業').show();
+        } else {
+            // 通常時間
+            $widget.addClass('status-normal');
         }
     }
 
