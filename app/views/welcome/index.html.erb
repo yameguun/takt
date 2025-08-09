@@ -20,287 +20,165 @@
     <!-- メインコンテンツ -->
     <div class="wrapper wrapper-content animated fadeInRight">
       
+      <!-- 統計カード -->
+      <div class="row">
+        <div class="col-lg-3">
+          <div class="ibox float-e-margins">
+            <div class="ibox-title">
+              <span class="label label-danger pull-right"><%= @current_month %></span>
+              <h5>上限到達者</h5>
+            </div>
+            <div class="ibox-content">
+              <h1 class="no-margins text-danger">
+                <%= @users.select { |u| u.total_hours >= @overtime_limit }.count %>
+              </h1>
+              <small>45時間以上</small>
+            </div>
+          </div>
+        </div>
+        <div class="col-lg-3">
+          <div class="ibox float-e-margins">
+            <div class="ibox-title">
+              <span class="label label-warning pull-right"><%= @current_month %></span>
+              <h5>要注意者</h5>
+            </div>
+            <div class="ibox-content">
+              <h1 class="no-margins text-warning">
+                <%= @users.select { |u| u.total_hours >= (@overtime_limit * 0.8) && u.total_hours < @overtime_limit }.count %>
+              </h1>
+              <small>36時間以上</small>
+            </div>
+          </div>
+        </div>
+        <div class="col-lg-3">
+          <div class="ibox float-e-margins">
+            <div class="ibox-title">
+              <span class="label label-info pull-right"><%= @current_month %></span>
+              <h5>平均残業時間</h5>
+            </div>
+            <div class="ibox-content">
+              <h1 class="no-margins">
+                <%= number_with_precision(@users.average(:total_hours) || 0, precision: 1) %>h
+              </h1>
+              <small>全社員平均</small>
+            </div>
+          </div>
+        </div>
+        <div class="col-lg-3">
+          <div class="ibox float-e-margins">
+            <div class="ibox-title">
+              <span class="label label-success pull-right"><%= @current_month %></span>
+              <h5>総残業時間</h5>
+            </div>
+            <div class="ibox-content">
+              <h1 class="no-margins">
+                <%= number_with_precision(@users.sum(:total_hours), precision: 1) %>h
+              </h1>
+              <small>全社員合計</small>
+            </div>
+          </div>
+        </div>
+      </div>
+      
       <!-- 今月の残業時間状況 -->
       <div class="row">
         <div class="col-lg-12">
           <div class="ibox float-e-margins">
             <div class="ibox-title">
               <h5><i class="fa fa-clock-o"></i> 今月の残業時間状況</h5>
-              <span class="label label-warning pull-right">2024年1月</span>
+              <span class="label label-warning pull-right"><%= @current_month %></span>
             </div>
             <div class="ibox-content">
-              <div class="table-responsive">
-                <table class="table table-striped">
-                  <thead>
-                    <tr>
-                      <th width="200">氏名</th>
-                      <th width="100">部署</th>
-                      <th>残業時間</th>
-                      <th width="100" class="text-center">状態</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <% @users.each do |user| %>
-                    <tr>
-                      <td>
-                        <div class="d-flex align-items-center">
-                          <% if user.avatar.attached? %>
-                          <%= image_tag user.avatar, class: "img-circle", style: "width: 32px; height: 32px; margin-right: 10px;", alt: user.name %>
-                          <% else %>
-                          <%= image_tag "https://via.placeholder.com/200x200/f8f8f9/676a6c?text=No+Image", class: "img-circle", style: "width: 32px; height: 32px; margin-right: 10px;", alt: user.name %>
-                          <% end %>
-                          <strong><%= user.name %></strong>
-                        </div>
-                      </td>
-                      <td><%= user.department_name %></td>
-                      <td>
-                        <div>
-                          <span class="pull-right text-danger font-bold"><%= number_with_precision(user.total_hours, precision: 1) %>h / 45h</span>
-                          <div class="progress m-t-xs">
-                            <div style="width: 100%;" class="progress-bar progress-bar-danger">
-                              <span class="sr-only">100% Complete</span>
+              <% if @users.any? %>
+                <div class="table-responsive">
+                  <table class="table table-striped" id="overtime-table">
+                    <thead>
+                      <tr>
+                        <th width="200">氏名</th>
+                        <th width="150">部署</th>
+                        <th>残業時間</th>
+                        <th width="100" class="text-center">状態</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <% @users.each do |user| %>
+                        <% 
+                          hours = user.total_hours || 0
+                          percentage = [(hours / @overtime_limit * 100).to_i, 100].min
+                          status = calculate_status(hours, @overtime_limit)
+                          
+                          # 残業時間に応じてテキスト色を設定
+                          text_color_class = if percentage >= 100
+                                              'text-danger'
+                                            elsif percentage >= 80
+                                              'text-warning'
+                                            else
+                                              ''
+                                            end
+                        %>
+                        <tr>
+                          <td>
+                            <div class="d-flex align-items-center">
+                              <% if user.avatar.attached? %>
+                                <%= image_tag user.avatar, 
+                                    class: "img-circle", 
+                                    style: "width: 32px; height: 32px; margin-right: 10px;", 
+                                    alt: user.name %>
+                              <% else %>
+                                <%= image_tag "https://via.placeholder.com/200x200/f8f8f9/676a6c?text=#{user.name.first}", 
+                                    class: "img-circle", 
+                                    style: "width: 32px; height: 32px; margin-right: 10px;", 
+                                    alt: user.name %>
+                              <% end %>
+                              <strong><%= user.name %></strong>
                             </div>
-                          </div>
-                        </div>
-                      </td>
-                      <td class="text-center">
-                        <span class="label label-danger">上限到達</span>
-                      </td>
-                    </tr>
-                    <% end %>
-                    <tr>
-                      <td>
-                        <div class="d-flex align-items-center">
-                          <img alt="image" class="img-circle" src="https://via.placeholder.com/32" style="width: 32px; height: 32px; margin-right: 10px;">
-                          <strong>山田 太郎</strong>
-                        </div>
-                      </td>
-                      <td>開発部</td>
-                      <td>
-                        <div>
-                          <span class="pull-right text-danger font-bold">45h / 45h</span>
-                          <div class="progress m-t-xs">
-                            <div style="width: 100%;" class="progress-bar progress-bar-danger">
-                              <span class="sr-only">100% Complete</span>
+                          </td>
+                          <td><%= user.department_name %></td>
+                          <td>
+                            <div>
+                              <span class="pull-right <%= text_color_class %> font-bold">
+                                <%= number_with_precision(hours, precision: 1) %>h / <%= @overtime_limit.to_i %>h
+                              </span>
+                              <div class="progress m-t-xs" style="height: 10px;">
+                                <div style="width: <%= percentage %>%;" 
+                                     class="progress-bar <%= status[:progress_class] %>"
+                                     data-percentage="<%= percentage %>">
+                                  <span class="sr-only"><%= percentage %>% Complete</span>
+                                </div>
+                              </div>
                             </div>
-                          </div>
-                        </div>
-                      </td>
-                      <td class="text-center">
-                        <span class="label label-danger">上限到達</span>
-                      </td>
-                    </tr>
-                    <tr>
-                      <td>
-                        <div class="d-flex align-items-center">
-                          <img alt="image" class="img-circle" src="https://via.placeholder.com/32" style="width: 32px; height: 32px; margin-right: 10px;">
-                          <strong>佐藤 花子</strong>
-                        </div>
-                      </td>
-                      <td>企画部</td>
-                      <td>
-                        <div>
-                          <span class="pull-right text-warning font-bold">38h / 45h</span>
-                          <div class="progress m-t-xs">
-                            <div style="width: 84%;" class="progress-bar progress-bar-warning">
-                              <span class="sr-only">84% Complete</span>
-                            </div>
-                          </div>
-                        </div>
-                      </td>
-                      <td class="text-center">
-                        <span class="label label-warning">要注意</span>
-                      </td>
-                    </tr>
-                    <tr>
-                      <td>
-                        <div class="d-flex align-items-center">
-                          <img alt="image" class="img-circle" src="https://via.placeholder.com/32" style="width: 32px; height: 32px; margin-right: 10px;">
-                          <strong>鈴木 一郎</strong>
-                        </div>
-                      </td>
-                      <td>営業部</td>
-                      <td>
-                        <div>
-                          <span class="pull-right text-warning font-bold">35h / 45h</span>
-                          <div class="progress m-t-xs">
-                            <div style="width: 78%;" class="progress-bar progress-bar-warning">
-                              <span class="sr-only">78% Complete</span>
-                            </div>
-                          </div>
-                        </div>
-                      </td>
-                      <td class="text-center">
-                        <span class="label label-warning">要注意</span>
-                      </td>
-                    </tr>
-                    <tr>
-                      <td>
-                        <div class="d-flex align-items-center">
-                          <img alt="image" class="img-circle" src="https://via.placeholder.com/32" style="width: 32px; height: 32px; margin-right: 10px;">
-                          <strong>田中 次郎</strong>
-                        </div>
-                      </td>
-                      <td>開発部</td>
-                      <td>
-                        <div>
-                          <span class="pull-right font-bold">28h / 45h</span>
-                          <div class="progress m-t-xs">
-                            <div style="width: 62%;" class="progress-bar progress-bar-info">
-                              <span class="sr-only">62% Complete</span>
-                            </div>
-                          </div>
-                        </div>
-                      </td>
-                      <td class="text-center">
-                        <span class="label label-info">標準</span>
-                      </td>
-                    </tr>
-                    <tr>
-                      <td>
-                        <div class="d-flex align-items-center">
-                          <img alt="image" class="img-circle" src="https://via.placeholder.com/32" style="width: 32px; height: 32px; margin-right: 10px;">
-                          <strong>高橋 美咲</strong>
-                        </div>
-                      </td>
-                      <td>デザイン部</td>
-                      <td>
-                        <div>
-                          <span class="pull-right font-bold">22h / 45h</span>
-                          <div class="progress m-t-xs">
-                            <div style="width: 49%;" class="progress-bar progress-bar-info">
-                              <span class="sr-only">49% Complete</span>
-                            </div>
-                          </div>
-                        </div>
-                      </td>
-                      <td class="text-center">
-                        <span class="label label-info">標準</span>
-                      </td>
-                    </tr>
-                    <tr>
-                      <td>
-                        <div class="d-flex align-items-center">
-                          <img alt="image" class="img-circle" src="https://via.placeholder.com/32" style="width: 32px; height: 32px; margin-right: 10px;">
-                          <strong>伊藤 美穂</strong>
-                        </div>
-                      </td>
-                      <td>マーケティング部</td>
-                      <td>
-                        <div>
-                          <span class="pull-right font-bold">18h / 45h</span>
-                          <div class="progress m-t-xs">
-                            <div style="width: 40%;" class="progress-bar progress-bar-info">
-                              <span class="sr-only">40% Complete</span>
-                            </div>
-                          </div>
-                        </div>
-                      </td>
-                      <td class="text-center">
-                        <span class="label label-info">標準</span>
-                      </td>
-                    </tr>
-                    <tr>
-                      <td>
-                        <div class="d-flex align-items-center">
-                          <img alt="image" class="img-circle" src="https://via.placeholder.com/32" style="width: 32px; height: 32px; margin-right: 10px;">
-                          <strong>渡辺 健</strong>
-                        </div>
-                      </td>
-                      <td>管理部</td>
-                      <td>
-                        <div>
-                          <span class="pull-right font-bold">15h / 45h</span>
-                          <div class="progress m-t-xs">
-                            <div style="width: 33%;" class="progress-bar progress-bar-success">
-                              <span class="sr-only">33% Complete</span>
-                            </div>
-                          </div>
-                        </div>
-                      </td>
-                      <td class="text-center">
-                        <span class="label label-success">余裕あり</span>
-                      </td>
-                    </tr>
-                    <tr>
-                      <td>
-                        <div class="d-flex align-items-center">
-                          <img alt="image" class="img-circle" src="https://via.placeholder.com/32" style="width: 32px; height: 32px; margin-right: 10px;">
-                          <strong>中村 健太</strong>
-                        </div>
-                      </td>
-                      <td>開発部</td>
-                      <td>
-                        <div>
-                          <span class="pull-right font-bold">12h / 45h</span>
-                          <div class="progress m-t-xs">
-                            <div style="width: 27%;" class="progress-bar progress-bar-success">
-                              <span class="sr-only">27% Complete</span>
-                            </div>
-                          </div>
-                        </div>
-                      </td>
-                      <td class="text-center">
-                        <span class="label label-success">余裕あり</span>
-                      </td>
-                    </tr>
-                    <tr>
-                      <td>
-                        <div class="d-flex align-items-center">
-                          <img alt="image" class="img-circle" src="https://via.placeholder.com/32" style="width: 32px; height: 32px; margin-right: 10px;">
-                          <strong>木村 さくら</strong>
-                        </div>
-                      </td>
-                      <td>人事部</td>
-                      <td>
-                        <div>
-                          <span class="pull-right font-bold">8h / 45h</span>
-                          <div class="progress m-t-xs">
-                            <div style="width: 18%;" class="progress-bar progress-bar-success">
-                              <span class="sr-only">18% Complete</span>
-                            </div>
-                          </div>
-                        </div>
-                      </td>
-                      <td class="text-center">
-                        <span class="label label-success">余裕あり</span>
-                      </td>
-                    </tr>
-                    <tr>
-                      <td>
-                        <div class="d-flex align-items-center">
-                          <img alt="image" class="img-circle" src="https://via.placeholder.com/32" style="width: 32px; height: 32px; margin-right: 10px;">
-                          <strong>林 大輔</strong>
-                        </div>
-                      </td>
-                      <td>営業部</td>
-                      <td>
-                        <div>
-                          <span class="pull-right font-bold">5h / 45h</span>
-                          <div class="progress m-t-xs">
-                            <div style="width: 11%;" class="progress-bar progress-bar-success">
-                              <span class="sr-only">11% Complete</span>
-                            </div>
-                          </div>
-                        </div>
-                      </td>
-                      <td class="text-center">
-                        <span class="label label-success">余裕あり</span>
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-              
-              <!-- 凡例 -->
-              <div class="m-t-md">
-                <small class="text-muted">
-                  <span class="label label-danger">上限到達</span> 45時間以上
-                  <span class="label label-warning m-l-xs">要注意</span> 36時間以上（80%）
-                  <span class="label label-info m-l-xs">標準</span> 18〜35時間
-                  <span class="label label-success m-l-xs">余裕あり</span> 18時間未満
-                </small>
-              </div>
+                          </td>
+                          <td class="text-center">
+                            <span class="label <%= status[:label] %>"><%= status[:text] %></span>
+                          </td>
+                        </tr>
+                      <% end %>
+                    </tbody>
+                  </table>
+                </div>
+                
+                <!-- 凡例 -->
+                <div class="m-t-md">
+                  <small class="text-muted">
+                    <span class="label label-danger">上限到達</span> <%= @overtime_limit.to_i %>時間以上
+                    <span class="label label-warning m-l-xs">要注意</span> <%= (@overtime_limit * 0.8).to_i %>時間以上（80%）
+                    <span class="label label-info m-l-xs">標準</span> <%= (@overtime_limit * 0.4).to_i %>〜<%= (@overtime_limit * 0.8).to_i - 1 %>時間
+                    <span class="label label-success m-l-xs">余裕あり</span> <%= (@overtime_limit * 0.4).to_i %>時間未満
+                  </small>
+                </div>
+                
+                <!-- エクスポートボタン -->
+                <div class="m-t-md text-right">
+                  <%= link_to "#", class: "btn btn-primary btn-sm", id: "export-csv" do %>
+                    <i class="fa fa-download"></i> CSVエクスポート
+                  <% end %>
+                </div>
+              <% else %>
+                <div class="text-center p-lg">
+                  <i class="fa fa-info-circle fa-3x text-muted"></i>
+                  <p class="m-t-md text-muted">残業時間のデータがありません。</p>
+                </div>
+              <% end %>
             </div>
           </div>
         </div>
@@ -317,10 +195,55 @@ $(document).ready(function() {
     $('.progress-bar').each(function() {
         var $this = $(this);
         var width = $this.css('width');
+        var percentage = $this.data('percentage');
         $this.css('width', 0);
         $this.animate({
             width: width
         }, 1000);
+    });
+    
+    // DataTables初期化（オプション）
+    if ($.fn.DataTable && $('#overtime-table tbody tr').length > 10) {
+        $('#overtime-table').DataTable({
+            pageLength: 25,
+            responsive: true,
+            language: {
+                url: "//cdn.datatables.net/plug-ins/1.10.25/i18n/Japanese.json"
+            },
+            order: [[2, 'desc']], // 残業時間で降順ソート
+            columnDefs: [
+                { orderable: false, targets: 3 } // 状態列はソート無効
+            ]
+        });
+    }
+    
+    // CSVエクスポート
+    $('#export-csv').on('click', function(e) {
+        e.preventDefault();
+        
+        var csv = [];
+        var headers = ['氏名', '部署', '残業時間(h)', '状態'];
+        csv.push(headers.join(','));
+        
+        $('#overtime-table tbody tr').each(function() {
+            var row = [];
+            row.push($(this).find('td:eq(0) strong').text());
+            row.push($(this).find('td:eq(1)').text());
+            row.push($(this).find('td:eq(2) span').text().replace(/h.*/, '').trim());
+            row.push($(this).find('td:eq(3) span').text());
+            csv.push(row.join(','));
+        });
+        
+        var csvContent = csv.join('\n');
+        var blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
+        var link = document.createElement('a');
+        var url = URL.createObjectURL(blob);
+        link.setAttribute('href', url);
+        link.setAttribute('download', '残業時間レポート_<%= @current_month %>.csv');
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
     });
 });
 </script>
