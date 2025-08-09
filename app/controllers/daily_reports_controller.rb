@@ -28,7 +28,7 @@ class DailyReportsController < BaseController
               daily_report_project.update!(
                 client_id: work_params[:client_id],
                 project_id: work_params[:project_id],
-                hours: work_params[:hours],
+                minutes: work_params[:minutes],
                 description: work_params[:description]
               )
               submitted_work_ids << daily_report_project.id
@@ -38,7 +38,7 @@ class DailyReportsController < BaseController
             daily_report_project = @daily_report.daily_report_projects.create!(
               client_id: work_params[:client_id],
               project_id: work_params[:project_id],
-              hours: work_params[:hours],
+              minutes: work_params[:minutes],
               description: work_params[:description]
             )
             submitted_work_ids << daily_report_project.id

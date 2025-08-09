@@ -4,9 +4,9 @@
 #
 #  id                    :bigint           not null, primary key
 #  description           :text(65535)
-#  hours                 :integer          default(0), not null
 #  is_overtime_approved  :boolean          default(FALSE), not null
 #  is_overtime_requested :boolean          default(FALSE), not null
+#  minutes               :integer          default(0), not null
 #  created_at            :datetime         not null
 #  updated_at            :datetime         not null
 #  client_id             :bigint           not null
@@ -21,5 +21,5 @@ class DailyReportProject < ApplicationRecord
   belongs_to :daily_report, inverse_of: :daily_report_projects
   belongs_to :project, optional: true
 
-  validates :hours, presence: true, numericality: true
+  validates :minutes, presence: true, numericality: true
 end

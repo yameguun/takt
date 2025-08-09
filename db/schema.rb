@@ -96,7 +96,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_08_06_060746) do
     t.bigint "daily_report_id", null: false
     t.bigint "client_id", null: false
     t.bigint "project_id", null: false
-    t.integer "hours", default: 0, null: false
+    t.integer "minutes", default: 0, null: false
     t.text "description"
     t.boolean "is_overtime_requested", default: false, null: false
     t.boolean "is_overtime_approved", default: false, null: false
