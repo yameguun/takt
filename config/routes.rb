@@ -23,7 +23,7 @@ Rails.application.routes.draw do
   resources :daily_reports, only: [:index, :create], path: "/reports"
 
   # カレンダー
-  resources :calendars, only: [:index]
+  get 'calendar', to: 'calendars#show'
 
   # 残業承認画面
   resources :overtime_requests, only: [:index] do
