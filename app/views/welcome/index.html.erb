@@ -3,9 +3,10 @@
   <%= render 'shared/header' %>
   <div id="page-wrapper" class="gray-bg">
     <%= render 'shared/navbar' %>
+    
     <!-- ヘッダー部分 -->
     <div class="row wrapper border-bottom white-bg page-heading">
-      <div class="col-lg-12">
+      <div class="col-lg-8">
         <h2 class="m-t-md">
           <i class="fa fa-th-large text-navy"></i> ダッシュボード
         </h2>
@@ -14,6 +15,22 @@
             <strong>ダッシュボード</strong>
           </li>
         </ol>
+      </div>
+      
+      <!-- 月選択ドロップダウン -->
+      <div class="col-lg-4">
+        <% if @available_months.present? %>
+          <div class="m-t-lg text-right">
+            <label class="m-r-sm">表示月:</label>
+            <select id="month-filter" class="form-control input-sm" style="display:inline-block; width:auto;">
+              <% @available_months.each do |m| %>
+                <option value="<%= root_path(month: m[:value]) %>" <%= 'selected' if m[:value] == @selected_month_ym %>>
+                  <%= m[:label] %>
+                </option>
+              <% end %>
+            </select>
+          </div>
+        <% end %>
       </div>
     </div>
     
@@ -80,13 +97,33 @@
         </div>
       </div>
       
-      <!-- 今月の残業時間状況 -->
+      <!-- 残業時間状況 -->
       <div class="row">
         <div class="col-lg-12">
           <div class="ibox float-e-margins">
             <div class="ibox-title">
-              <h5><i class="fa fa-clock-o"></i> 今月の残業時間状況</h5>
-              <span class="label label-warning pull-right"><%= @current_month %></span>
+              <div class="pull-right">
+                <!-- 月ナビゲーション -->
+                <% if @target_date.present? %>
+                  <% prev_month = @target_date.prev_month.strftime("%Y-%m") %>
+                  <% next_month = @target_date.next_month.strftime("%Y-%m") %>
+                  
+                  <%= link_to root_path(month: prev_month), class: "btn btn-xs btn-default" do %>
+                    <i class="fa fa-angle-left"></i> 先月
+                  <% end %>
+                  
+                  <span class="m-l-sm m-r-sm"><%= @current_month %></span>
+                  
+                  <%= link_to root_path(month: next_month), class: "btn btn-xs btn-default" do %>
+                    来月 <i class="fa fa-angle-right"></i>
+                  <% end %>
+                  
+                  <%= link_to root_path, class: "btn btn-xs btn-primary m-l-sm" do %>
+                    <i class="fa fa-home"></i> 今月
+                  <% end %>
+                <% end %>
+              </div>
+              <h5><i class="fa fa-clock-o"></i> 残業時間状況</h5>
             </div>
             <div class="ibox-content">
               <% if @users.any? %>
@@ -107,7 +144,6 @@
                           percentage = [(hours / @overtime_limit * 100).to_i, 100].min
                           status = calculate_status(hours, @overtime_limit)
                           
-                          # 残業時間に応じてテキスト色を設定
                           text_color_class = if percentage >= 100
                                               'text-danger'
                                             elsif percentage >= 80
@@ -176,7 +212,7 @@
               <% else %>
                 <div class="text-center p-lg">
                   <i class="fa fa-info-circle fa-3x text-muted"></i>
-                  <p class="m-t-md text-muted">残業時間のデータがありません。</p>
+                  <p class="m-t-md text-muted"><%= @current_month %>の残業時間データがありません。</p>
                 </div>
               <% end %>
             </div>
@@ -191,6 +227,14 @@
 
 <script>
 $(document).ready(function() {
+    // 月選択ドロップダウンの処理
+    $('#month-filter').on('change', function() {
+        var url = $(this).val();
+        if (url) {
+            window.location.href = url;
+        }
+    });
+
     // プログレスバーアニメーション
     $('.progress-bar').each(function() {
         var $this = $(this);
