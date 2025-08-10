@@ -128,171 +128,183 @@
         </div>
       </div>
 
-      <!-- 日報一覧 -->
+      <!-- フラット一覧表示 -->
       <div class="row">
         <div class="col-lg-12">
           <div class="ibox">
             <div class="ibox-title">
               <h5>
-                <i class="fa fa-list"></i> 社員別日報一覧
+                <i class="fa fa-list"></i> 社員別日報一覧（全表示）
               </h5>
               <div class="ibox-tools">
-                <button class="btn btn-xs btn-white" id="expandAllBtn">
-                  <i class="fa fa-expand"></i> 全て展開
-                </button>
-                <button class="btn btn-xs btn-white" id="collapseAllBtn">
-                  <i class="fa fa-compress"></i> 全て折りたたみ
-                </button>
+                <span class="text-muted">
+                  <i class="fa fa-info-circle"></i> 
+                  すべての情報を一覧表示
+                </span>
               </div>
             </div>
-            <div class="ibox-content">
+            <div class="ibox-content p-n">
               
-              <% if @users_with_reports.any? %>
-                <div class="report-list">
-                  <% @users_with_reports.each do |user| %>
-                    <% daily_report = user.daily_reports.find { |dr| dr.date == @target_date } %>
-                    <% total_minutes = daily_report&.daily_report_projects&.sum(&:minutes) || 0 %>
-                    
-                    <div class="report-item <%= 'no-report' unless daily_report %>" 
-                         data-user-id="<%= user.id %>">
-                      
-                      <!-- ユーザー情報ヘッダー -->
-                      <div class="report-header" data-toggle="collapse" 
-                           data-target="#report-<%= user.id %>" 
-                           aria-expanded="false">
-                        <div class="row">
-                          <div class="col-md-6">
-                            <div class="user-info">
+              <% if @users.any? %>
+                <div class="table-responsive">
+                  <table class="table table-hover table-striped m-b-none">
+                    <thead>
+                      <tr class="table-header">
+                        <th style="width: 200px;">
+                          <i class="fa fa-user"></i> 社員情報
+                        </th>
+                        <th style="width: 80px;" class="text-center">
+                          <i class="fa fa-check"></i> 提出
+                        </th>
+                        <th style="width: 90px;" class="text-center">
+                          <i class="fa fa-clock-o"></i> 総時間
+                        </th>
+                        <th>
+                          <i class="fa fa-tasks"></i> 作業記録
+                        </th>
+                        <th style="width: 350px;">
+                          <i class="fa fa-file-text-o"></i> 日報内容
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <% @users.each do |user| %>
+                        <% daily_report = @reports_by_user_id[user.id] %>
+                        <% works = daily_report&.daily_report_projects || [] %>
+                        <% total_minutes = works.sum(&:minutes) %>
+                        
+                        <tr class="report-row <%= 'no-report-row' unless daily_report %>">
+                          <!-- 社員情報 -->
+                          <td class="user-info-cell">
+                            <div class="user-profile">
                               <% if user.avatar.attached? %>
-                                <%= image_tag user.avatar_thumbnail, 
-                                    class: "img-circle user-avatar", 
-                                    size: "40x40" %>
+                                <%= image_tag user.avatar, 
+                                  class: "img-circle user-avatar-sm", 
+                                  style: "width: 42px; height: 42px; object-fit: cover;",
+                                  alt: user.name %>
                               <% else %>
-                                <div class="user-avatar-placeholder">
+                                <div class="user-avatar-placeholder-sm">
                                   <i class="fa fa-user"></i>
                                 </div>
                               <% end %>
                               
-                              <div class="user-details">
-                                <h4 class="user-name">
-                                  <%= user.name %>
-                                  <% if daily_report %>
-                                    <span class="label label-primary">提出済み</span>
-                                  <% else %>
-                                    <span class="label label-default">未提出</span>
-                                  <% end %>
-                                </h4>
-                                <small class="text-muted">
+                              <div class="user-details-compact">
+                                <div class="user-name-compact"><%= user.name %></div>
+                                <small class="text-muted department-info">
                                   <i class="fa fa-building-o"></i> 
                                   <%= user.department&.name || '部署未設定' %>
                                 </small>
                               </div>
                             </div>
-                          </div>
-                          
-                          <div class="col-md-6 text-right">
+                          </td>
+
+                          <!-- 提出状況 -->
+                          <td class="text-center status-cell">
                             <% if daily_report %>
-                              <div class="report-summary">
-                                <span class="work-hours">
-                                  <i class="fa fa-clock-o text-navy"></i>
-                                  <%= (total_minutes / 60.0).round(1) %>時間
+                              <span class="label label-primary label-status">
+                                <i class="fa fa-check"></i> 提出済み
+                              </span>
+                            <% else %>
+                              <span class="label label-default label-status">
+                                <i class="fa fa-times"></i> 未提出
+                              </span>
+                            <% end %>
+                          </td>
+
+                          <!-- 総作業時間 -->
+                          <td class="text-center time-cell">
+                            <% if daily_report && total_minutes > 0 %>
+                              <div class="work-time-display">
+                                <span class="hours-number <%= total_minutes > 480 ? 'overtime-hours' : 'normal-hours' %>">
+                                  <%= (total_minutes / 60.0).round(1) %>
                                 </span>
+                                <small class="hours-unit">時間</small>
                                 <% if total_minutes > 480 %>
-                                  <span class="label label-warning m-l-xs">残業</span>
+                                  <div class="overtime-badge">
+                                    <span class="label label-warning">
+                                      <i class="fa fa-moon-o"></i> 残業
+                                    </span>
+                                  </div>
                                 <% end %>
                               </div>
                             <% else %>
-                              <span class="text-muted">
-                                <i class="fa fa-exclamation-triangle"></i> 未提出
-                              </span>
+                              <span class="text-muted">-</span>
                             <% end %>
-                            
-                            <i class="fa fa-chevron-down collapse-icon m-l-md"></i>
-                          </div>
-                        </div>
-                      </div>
+                          </td>
 
-                      <!-- 詳細コンテンツ（折りたたみ） -->
-                      <div class="collapse report-details" id="report-<%= user.id %>">
-                        <% if daily_report %>
-                          <div class="report-content">
-                            
-                            <!-- 作業記録 -->
-                            <% if daily_report.daily_report_projects.any? %>
-                              <div class="work-records m-b-md">
-                                <h5><i class="fa fa-tasks"></i> 作業記録</h5>
-                                <div class="table-responsive">
-                                  <table class="table table-striped table-hover">
-                                    <thead>
-                                      <tr>
-                                        <th><i class="fa fa-building-o"></i> 顧客</th>
-                                        <th><i class="fa fa-folder-o"></i> 案件</th>
-                                        <th><i class="fa fa-clock-o"></i> 時間</th>
-                                        <th><i class="fa fa-moon-o"></i> 残業</th>
-                                        <th><i class="fa fa-file-text-o"></i> 内容</th>
-                                      </tr>
-                                    </thead>
-                                    <tbody>
-                                      <% daily_report.daily_report_projects.each do |work| %>
-                                        <tr>
-                                          <td><%= work.project&.client&.name || '不明' %></td>
-                                          <td><%= work.project&.name || '不明' %></td>
-                                          <td>
-                                            <span class="badge badge-info">
-                                              <%= (work.minutes / 60.0).round(1) %>h
-                                            </span>
-                                          </td>
-                                          <td>
-                                            <% if work.is_overtime_approved %>
-                                              <span class="label label-success">
-                                                <i class="fa fa-check"></i> 承認済み
-                                              </span>
-                                            <% elsif work.is_overtime_requested %>
-                                              <span class="label label-warning">
-                                                <i class="fa fa-clock-o"></i> 申請中
-                                              </span>
-                                            <% else %>
-                                              <span class="text-muted">-</span>
-                                            <% end %>
-                                          </td>
-                                          <td>
-                                            <% if work.description.present? %>
-                                              <div class="work-description">
-                                                <%= truncate(work.description, length: 80) %>
-                                              </div>
-                                            <% else %>
-                                              <span class="text-muted">記載なし</span>
-                                            <% end %>
-                                          </td>
-                                        </tr>
+                          <!-- 作業記録 -->
+                          <td class="work-records-cell">
+                            <% if daily_report && works.any? %>
+                              <div class="work-items-compact">
+                                <% works.each_with_index do |work, index| %>
+                                  <div class="work-item-row <%= 'work-item-border' if index > 0 %>">
+                                    <div class="work-item-content">
+                                      <div class="client-project-info">
+                                        <span class="client-name">
+                                          <i class="fa fa-building text-info"></i>
+                                          <%= work.project&.client&.name || '不明' %>
+                                        </span>
+                                        <span class="project-name">
+                                          <i class="fa fa-folder-open text-success"></i>
+                                          <%= work.project&.name || '不明' %>
+                                        </span>
+                                      </div>
+                                      
+                                      <div class="work-meta">
+                                        <span class="work-duration">
+                                          <i class="fa fa-clock-o"></i>
+                                          <%= (work.minutes / 60.0).round(1) %>h
+                                        </span>
+                                        
+                                        <% if work.is_overtime_approved %>
+                                          <span class="overtime-status overtime-approved">
+                                            <i class="fa fa-check-circle"></i> 承認済み
+                                          </span>
+                                        <% elsif work.is_overtime_requested %>
+                                          <span class="overtime-status overtime-pending">
+                                            <i class="fa fa-clock-o"></i> 申請中
+                                          </span>
+                                        <% end %>
+                                      </div>
+                                      
+                                      <% if work.description.present? %>
+                                        <div class="work-description-compact">
+                                          <%= truncate(work.description, length: 60) %>
+                                        </div>
                                       <% end %>
-                                    </tbody>
-                                  </table>
-                                </div>
+                                    </div>
+                                  </div>
+                                <% end %>
                               </div>
+                            <% elsif daily_report %>
+                              <span class="text-muted">作業記録なし</span>
+                            <% else %>
+                              <span class="text-muted">-</span>
                             <% end %>
+                          </td>
 
-                            <!-- 日報本文 -->
-                            <div class="report-text">
-                              <h5><i class="fa fa-file-text-o"></i> 日報内容</h5>
-                              <% if daily_report.content.present? %>
-                                <div class="well">
-                                  <%= simple_format(h(daily_report.content)) %>
-                                </div>
-                              <% else %>
-                                <p class="text-muted">日報内容が記載されていません</p>
-                              <% end %>
-                            </div>
-                          </div>
-                        <% else %>
-                          <div class="no-report-message text-center p-lg">
-                            <i class="fa fa-exclamation-circle fa-3x text-muted m-b-md"></i>
-                            <h4 class="text-muted">この日の日報は提出されていません</h4>
-                          </div>
-                        <% end %>
-                      </div>
-                    </div>
-                  <% end %>
+                          <!-- 日報内容 -->
+                          <td class="report-content-cell">
+                            <% if daily_report && daily_report.content.present? %>
+                              <div class="report-content-preview">
+                                <%= simple_format(truncate(h(daily_report.content), length: 150)) %>
+                                <% if daily_report.content.length > 150 %>
+                                  <button class="btn btn-xs btn-link show-full-content" 
+                                          data-content="<%= h(daily_report.content) %>">
+                                    <i class="fa fa-expand"></i> 全文表示
+                                  </button>
+                                <% end %>
+                              </div>
+                            <% elsif daily_report %>
+                              <span class="text-muted">記載なし</span>
+                            <% else %>
+                              <span class="text-muted">-</span>
+                            <% end %>
+                          </td>
+                        </tr>
+                      <% end %>
+                    </tbody>
+                  </table>
                 </div>
               <% else %>
                 <div class="empty-state text-center p-xl">
@@ -310,8 +322,30 @@
   </div>
 </div>
 
+<!-- 日報内容全文表示モーダル -->
+<div class="modal fade" id="reportContentModal" tabindex="-1" role="dialog">
+  <div class="modal-dialog modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+        <h4 class="modal-title">
+          <i class="fa fa-file-text-o"></i> 日報内容（全文）
+        </h4>
+      </div>
+      <div class="modal-body">
+        <div id="fullReportContent" class="report-full-content"></div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-default" data-dismiss="modal">閉じる</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <style>
-/* ===== チーム日報管理画面専用スタイル ===== */
+/* ===== フラット一覧表示専用スタイル ===== */
 
 /* 日付ナビゲーション */
 .date-navigation .btn {
@@ -327,184 +361,303 @@
   cursor: default !important;
 }
 
-/* 日報アイテム */
-.report-item {
-  border: 1px solid #e7eaec;
-  border-radius: 8px;
-  margin-bottom: 15px;
-  background: #ffffff;
-  transition: all 0.3s ease;
+/* テーブル全体 */
+.table-header {
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  border-bottom: 2px solid #1ab394;
 }
 
-.report-item:hover {
-  box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+.table-header th {
+  font-weight: 700;
+  color: #2f4050;
+  vertical-align: middle;
+  padding: 15px 12px;
+  border-bottom: 2px solid #1ab394;
+}
+
+.report-row {
+  transition: all 0.3s ease;
+  border-left: 3px solid transparent;
+}
+
+.report-row:hover {
+  background-color: #f8f9fa;
+  border-left-color: #1ab394;
+}
+
+.report-row.no-report-row {
+  background-color: #fefefe;
+  border-left-color: #f8ac59;
+}
+
+.report-row.no-report-row:hover {
+  background-color: #fff9e6;
+}
+
+/* ユーザー情報セル */
+.user-info-cell {
+  padding: 15px 12px;
+}
+
+.user-profile {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.user-avatar-sm {
+  border: 2px solid #e7eaec;
+  transition: border-color 0.3s ease;
+}
+
+.report-row:hover .user-avatar-sm {
   border-color: #1ab394;
 }
 
-.report-item.no-report {
-  background: #f8f9fa;
-  border-color: #dee2e6;
-}
-
-.report-item.no-report:hover {
-  border-color: #f8ac59;
-}
-
-/* ヘッダー部分 */
-.report-header {
-  padding: 20px;
-  cursor: pointer;
-  transition: background-color 0.2s ease;
-}
-
-.report-header:hover {
-  background-color: #f8f9fa;
-}
-
-/* ユーザー情報 */
-.user-info {
-  display: flex;
-  align-items: center;
-}
-
-.user-avatar {
-  border: 2px solid #e7eaec;
-  margin-right: 15px;
-}
-
-.user-avatar-placeholder {
-  width: 40px;
-  height: 40px;
+.user-avatar-placeholder-sm {
+  width: 42px;
+  height: 42px;
   border-radius: 50%;
   background: #e7eaec;
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-right: 15px;
   color: #999;
-}
-
-.user-details {
-  flex: 1;
-}
-
-.user-name {
-  margin: 0;
   font-size: 16px;
-  font-weight: 600;
+  border: 2px solid #e7eaec;
+  transition: all 0.3s ease;
 }
 
-.user-name .label {
-  font-size: 10px;
-  margin-left: 8px;
-  vertical-align: middle;
-}
-
-/* 作業時間表示 */
-.work-hours {
-  font-size: 16px;
-  font-weight: 600;
+.report-row:hover .user-avatar-placeholder-sm {
+  border-color: #1ab394;
+  background: #f0f8f7;
   color: #1ab394;
 }
 
-/* 折りたたみアイコン */
-.collapse-icon {
-  transition: transform 0.3s ease;
-  color: #999;
+.user-details-compact {
+  flex: 1;
 }
 
-.report-header[aria-expanded="true"] .collapse-icon {
-  transform: rotate(180deg);
-}
-
-/* 詳細コンテンツ */
-.report-details {
-  border-top: 1px solid #e7eaec;
-  background: #fafafa;
-}
-
-.report-content {
-  padding: 20px;
-}
-
-.report-content h5 {
+.user-name-compact {
+  font-size: 15px;
+  font-weight: 600;
   color: #2f4050;
-  font-weight: 600;
-  margin-bottom: 15px;
-  padding-bottom: 8px;
-  border-bottom: 2px solid #1ab394;
+  margin-bottom: 2px;
 }
 
-/* 作業記録テーブル */
-.work-records .table {
-  background: white;
-  border-radius: 4px;
-  overflow: hidden;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-}
-
-.work-records .table th {
-  background: #f8f9fa;
-  font-weight: 600;
+.department-info {
   font-size: 12px;
-  border-bottom: 2px solid #e7eaec;
+  color: #676a6c;
 }
 
-.work-description {
-  max-width: 200px;
-  word-wrap: break-word;
-  font-size: 13px;
-  line-height: 1.4;
+/* ステータスセル */
+.status-cell {
+  padding: 15px 8px;
+  vertical-align: middle;
 }
 
-/* 日報本文 */
-.report-text .well {
-  background: white;
-  border: 1px solid #e7eaec;
-  border-left: 4px solid #1ab394;
-  font-size: 14px;
-  line-height: 1.6;
-  max-height: 300px;
+.label-status {
+  font-size: 10px;
+  padding: 6px 10px;
+  border-radius: 12px;
+  font-weight: 600;
+}
+
+/* 時間セル */
+.time-cell {
+  padding: 15px 8px;
+  vertical-align: middle;
+}
+
+.work-time-display {
+  text-align: center;
+}
+
+.hours-number {
+  font-size: 18px;
+  font-weight: 700;
+  display: block;
+  line-height: 1.2;
+}
+
+.normal-hours {
+  color: #1ab394;
+}
+
+.overtime-hours {
+  color: #f8ac59;
+}
+
+.hours-unit {
+  font-size: 11px;
+  color: #676a6c;
+  display: block;
+  margin-top: 2px;
+}
+
+.overtime-badge {
+  margin-top: 5px;
+}
+
+/* 作業記録セル */
+.work-records-cell {
+  padding: 12px;
+  vertical-align: top;
+}
+
+.work-items-compact {
+  max-height: 200px;
   overflow-y: auto;
 }
 
-/* 未提出メッセージ */
-.no-report-message {
-  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+.work-item-row {
+  padding: 8px 0;
+}
+
+.work-item-border {
+  border-top: 1px solid #f1f1f1;
+  margin-top: 8px;
+  padding-top: 8px;
+}
+
+.work-item-content {
+  font-size: 12px;
+}
+
+.client-project-info {
+  margin-bottom: 4px;
+}
+
+.client-name, .project-name {
+  display: block;
+  margin-bottom: 2px;
+  color: #495057;
+}
+
+.client-name i {
+  color: #17a2b8;
+  margin-right: 4px;
+}
+
+.project-name i {
+  color: #28a745;
+  margin-right: 4px;
+}
+
+.work-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.work-duration {
+  background: #e9ecef;
+  padding: 2px 6px;
   border-radius: 8px;
-  margin: 20px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #495057;
+}
+
+.overtime-status {
+  font-size: 10px;
+  padding: 2px 6px;
+  border-radius: 8px;
+  font-weight: 600;
+}
+
+.overtime-approved {
+  background: #d4edda;
+  color: #155724;
+}
+
+.overtime-pending {
+  background: #fff3cd;
+  color: #856404;
+}
+
+.work-description-compact {
+  font-size: 11px;
+  color: #6c757d;
+  line-height: 1.3;
+  margin-top: 4px;
+}
+
+/* 日報内容セル */
+.report-content-cell {
+  padding: 12px;
+  vertical-align: top;
+}
+
+.report-content-preview {
+  font-size: 12px;
+  line-height: 1.4;
+  color: #495057;
+  max-height: 120px;
+  overflow: hidden;
+}
+
+.show-full-content {
+  padding: 2px 6px;
+  margin-top: 5px;
+  font-size: 11px;
+}
+
+/* モーダル */
+.report-full-content {
+  font-size: 14px;
+  line-height: 1.6;
+  color: #495057;
+  white-space: pre-wrap;
+  max-height: 400px;
+  overflow-y: auto;
 }
 
 /* レスポンシブ対応 */
+@media (max-width: 1200px) {
+  .work-records-cell,
+  .report-content-cell {
+    font-size: 11px;
+  }
+  
+  .table th:nth-child(4),
+  .table td:nth-child(4) {
+    max-width: 250px;
+  }
+  
+  .table th:nth-child(5),
+  .table td:nth-child(5) {
+    max-width: 200px;
+  }
+}
+
+@media (max-width: 992px) {
+  .user-profile {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+  
+  .work-meta {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+  }
+  
+  .table th:nth-child(4),
+  .table td:nth-child(4),
+  .table th:nth-child(5),
+  .table td:nth-child(5) {
+    display: none;
+  }
+}
+
 @media (max-width: 768px) {
   .date-navigation .btn small {
     display: none;
   }
   
-  .report-header {
-    padding: 15px;
-  }
-  
-  .user-info {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-  
-  .user-avatar {
-    margin-bottom: 10px;
-  }
-  
-  .report-summary {
-    margin-top: 10px;
-    text-align: left !important;
-  }
-  
-  .work-records .table-responsive {
-    font-size: 12px;
-  }
-}
-
-@media (max-width: 480px) {
   .btn-group-justified {
     display: flex;
     flex-direction: column;
@@ -519,6 +672,33 @@
     order: -1;
     margin-bottom: 15px;
   }
+  
+  .table-responsive {
+    font-size: 11px;
+  }
+}
+
+/* スクロールバーのスタイリング */
+.work-items-compact::-webkit-scrollbar,
+.report-full-content::-webkit-scrollbar {
+  width: 4px;
+}
+
+.work-items-compact::-webkit-scrollbar-track,
+.report-full-content::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 2px;
+}
+
+.work-items-compact::-webkit-scrollbar-thumb,
+.report-full-content::-webkit-scrollbar-thumb {
+  background: #1ab394;
+  border-radius: 2px;
+}
+
+.work-items-compact::-webkit-scrollbar-thumb:hover,
+.report-full-content::-webkit-scrollbar-thumb:hover {
+  background: #17987e;
 }
 </style>
 
@@ -533,40 +713,17 @@ $(document).ready(function() {
     }
   });
   
-  // 全て展開ボタン
-  $('#expandAllBtn').click(function() {
-    $('.report-details').collapse('show');
-    $(this).prop('disabled', true);
-    $('#collapseAllBtn').prop('disabled', false);
+  // 全文表示ボタン
+  $(document).on('click', '.show-full-content', function() {
+    const fullContent = $(this).data('content');
+    $('#fullReportContent').html(fullContent.replace(/\n/g, '<br>'));
+    $('#reportContentModal').modal('show');
   });
-  
-  // 全て折りたたみボタン
-  $('#collapseAllBtn').click(function() {
-    $('.report-details').collapse('hide');
-    $(this).prop('disabled', true);
-    $('#expandAllBtn').prop('disabled', false);
-  });
-  
-  // 折りたたみ状態の監視
-  $('.report-details').on('shown.bs.collapse hidden.bs.collapse', function() {
-    updateToggleButtons();
-  });
-  
-  function updateToggleButtons() {
-    const totalItems = $('.report-details').length;
-    const expandedItems = $('.report-details.in').length;
-    
-    $('#expandAllBtn').prop('disabled', expandedItems === totalItems);
-    $('#collapseAllBtn').prop('disabled', expandedItems === 0);
-  }
-  
-  // 初期状態のボタン設定
-  updateToggleButtons();
   
   // 統計ウィジェットのアニメーション
   $('.widget h2').each(function() {
     const $this = $(this);
-    const countTo = parseInt($this.text());
+    const countTo = parseFloat($this.text());
     
     if (!isNaN(countTo)) {
       $({ countNum: 0 }).animate({
@@ -575,13 +732,48 @@ $(document).ready(function() {
         duration: 1000,
         easing: 'swing',
         step: function() {
-          $this.text(Math.floor(this.countNum));
+          if (countTo % 1 === 0) {
+            $this.text(Math.floor(this.countNum));
+          } else {
+            $this.text(this.countNum.toFixed(1));
+          }
         },
         complete: function() {
-          $this.text(countTo);
+          $this.text(countTo % 1 === 0 ? countTo : countTo.toFixed(1));
         }
       });
     }
   });
+  
+  // 作業時間のアニメーション
+  $('.hours-number').each(function() {
+    const $this = $(this);
+    const countTo = parseFloat($this.text());
+    
+    if (!isNaN(countTo)) {
+      $({ countNum: 0 }).animate({
+        countNum: countTo
+      }, {
+        duration: 1200,
+        easing: 'swing',
+        step: function() {
+          $this.text(this.countNum.toFixed(1));
+        },
+        complete: function() {
+          $this.text(countTo.toFixed(1));
+        }
+      });
+    }
+  });
+  
+  // テーブル行のホバー効果
+  $('.report-row').hover(
+    function() {
+      $(this).find('.hours-number').addClass('text-primary');
+    },
+    function() {
+      $(this).find('.hours-number').removeClass('text-primary');
+    }
+  );
 });
 </script>

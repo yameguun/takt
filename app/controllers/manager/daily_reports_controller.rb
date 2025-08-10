@@ -4,7 +4,17 @@ class Manager::DailyReportsController < BaseController
   before_action :set_target_date
 
   def index
-    @users_with_reports = fetch_users_with_reports
+    # N+1問題を回避した効率的なデータ取得
+    @users = current_user.company.users
+      .includes(:department)
+      .order(:name)
+
+    # 指定日の日報を効率的に取得
+    @reports_by_user_id = DailyReport
+      .where(user_id: @users.select(:id), date: @target_date)
+      .includes(daily_report_projects: { project: :client })
+      .index_by(&:user_id)
+
     @report_statistics = calculate_statistics
   end
 
@@ -28,46 +38,20 @@ class Manager::DailyReportsController < BaseController
     @next_date = @target_date + 1.day
   end
 
-  def fetch_users_with_reports
-    # N+1問題を回避した効率的なクエリ
-    current_user.company.users
-      .includes(:department, daily_reports: { daily_report_projects: { project: :client } })
-      .left_joins(:daily_reports)
-      .where(daily_reports: { date: [@target_date, nil] })
-      .select(
-        'users.*',
-        'daily_reports.id as report_id',
-        'daily_reports.content as report_content',
-        'daily_reports.date as report_date'
-      )
-      .order('users.name ASC')
-      .group_by(&:id)
-      .map { |_, users| users.first }
-  end
-
   def calculate_statistics
-    reports_with_content = @users_with_reports.select { |u| u.report_id.present? }
-    total_users = current_user.company.users.count
+    reports_with_content = @reports_by_user_id.values
     
-    # 作業時間の集計
-    total_minutes = DailyReportProject.joins(daily_report: :user)
-      .where(users: { company_id: current_user.company_id })
-      .where(daily_reports: { date: @target_date })
-      .sum(:minutes)
-
-    # 残業申請の集計
-    overtime_requests = DailyReportProject.joins(daily_report: :user)
-      .where(users: { company_id: current_user.company_id })
-      .where(daily_reports: { date: @target_date })
-      .where(is_overtime_requested: true, is_overtime_approved: false)
-      .count
+    # 作業時間と残業申請の集計
+    minutes_scope = DailyReportProject
+      .joins(:daily_report)
+      .where(daily_reports: { user_id: @users.select(:id), date: @target_date })
 
     {
-      submitted_count: reports_with_content.count,
-      total_users: total_users,
-      submission_rate: total_users > 0 ? (reports_with_content.count.to_f / total_users * 100).round(1) : 0,
-      total_work_hours: (total_minutes / 60.0).round(1),
-      overtime_requests: overtime_requests
+      submitted_count: reports_with_content.size,
+      total_users: @users.size,
+      submission_rate: @users.size.zero? ? 0 : ((reports_with_content.size.to_f / @users.size) * 100).round(1),
+      total_work_hours: (minutes_scope.sum(:minutes) / 60.0).round(1),
+      overtime_requests: minutes_scope.where(is_overtime_requested: true, is_overtime_approved: false).count
     }
   end
 end
