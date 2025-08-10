@@ -111,6 +111,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_08_06_060746) do
     t.text "content"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.index ["user_id", "date"], name: "index_daily_reports_on_user_id_and_date", unique: true
     t.index ["user_id"], name: "index_daily_reports_on_user_id"
   end
 

@@ -7,5 +7,6 @@ class CreateDailyReports < ActiveRecord::Migration[8.0]
 
       t.timestamps
     end
+    add_index :daily_reports, [:user_id, :date], unique: true
   end
 end

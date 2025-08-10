@@ -19,7 +19,19 @@
 #
 class DailyReportProject < ApplicationRecord
   belongs_to :daily_report, inverse_of: :daily_report_projects
-  belongs_to :project, optional: true
-
-  validates :minutes, presence: true, numericality: true
+  belongs_to :project, optional: false
+  
+  validates :minutes, numericality: { 
+    only_integer: true, 
+    greater_than: 0, 
+    less_than_or_equal_to: 1440 
+  }
+  validate :client_matches_project
+  
+  private
+  
+  def client_matches_project
+    return if project_id.blank? || client_id.blank?
+    errors.add(:client_id, 'が案件の顧客と一致しません') if project&.client_id != client_id
+  end
 end
