@@ -26,9 +26,11 @@ Rails.application.routes.draw do
   get 'calendar', to: 'calendars#show'
 
   # 残業承認画面
-  resources :overtime_requests, only: [:index] do
-    member do
-      patch :approve
+   namespace :manager do
+    resources :overtime_requests, only: [:index] do
+      member do
+        patch :approve
+      end
     end
   end
 
