@@ -97,18 +97,6 @@
                   </tbody>
                 </table>
               </div>
-              
-              <% if @users.empty? %>
-                <div class="text-center m-t-md m-b-md">
-                  <i class="fa fa-users fa-3x text-muted"></i>
-                  <p class="text-muted m-t">ユーザーが登録されていません</p>
-                  <%= link_to new_admin_company_user_path(@company), class: 'btn btn-primary btn-sm' do %>
-                    <i class="fa fa-plus"></i> 最初のユーザーを登録
-                  <% end %>
-                </div>
-              <% end %>
-              
-              <!-- ページネーション -->
               <div class="text-center">
                 <%= paginate @users, theme: 'admin' %>
               </div>
