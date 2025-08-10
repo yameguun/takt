@@ -40,7 +40,7 @@ class User < ApplicationRecord
   validate :acceptable_image
 
   def is_manager?
-    self.permission >= 0
+    self.permission >= 1
   end
 
    # サムネイル版（100x100以内にリサイズ）
