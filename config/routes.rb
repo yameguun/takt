@@ -32,6 +32,7 @@ Rails.application.routes.draw do
         patch :approve
       end
     end
+    resources :daily_reports, only: [:index]
   end
 
   namespace :api do

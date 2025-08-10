@@ -25,10 +25,16 @@
         </a>
       </li>
       <% if current_user.is_manager? %>
-      <li class="<%= active_class('overtime_requests') %>">
+      <li class="<%= active_class('manager/overtime_requests') %>">
         <%= link_to manager_overtime_requests_path do %>
           <i class="fa fa-fire"></i>
           <span class="nav-label">残業申請の承認</span>
+        <% end %>
+      </li>
+      <li class="<%= active_class('manager/daily_reports') %>">
+        <%= link_to manager_daily_reports_path  do %>
+          <i class="fa fa-users"></i>
+          <span class="nav-label">チーム日報管理</span>
         <% end %>
       </li>
       <% end %>

@@ -1,0 +1,587 @@
+<% provide(:title, "チーム日報管理") %>
+<div id="wrapper">
+  <%= render 'shared/header' %>
+  <div id="page-wrapper" class="gray-bg">
+    <%= render 'shared/navbar' %>
+    
+    <!-- ヘッダー部分 -->
+    <div class="row wrapper border-bottom white-bg page-heading">
+      <div class="col-lg-12">
+        <h2 class="m-t-md">
+          <i class="fa fa-users text-navy"></i> チーム日報管理
+          <small class="m-l-sm">(<%= @target_date.strftime("%Y年%m月%d日") %>)</small>
+        </h2>
+        <ol class="breadcrumb">
+          <li class="breadcrumb-item">
+            <a href="/">ホーム</a>
+          </li>
+          <li class="breadcrumb-item active">
+            <strong>チーム日報管理</strong>
+          </li>
+        </ol>
+      </div>
+    </div>
+
+    <!-- メインコンテンツ -->
+    <div class="wrapper wrapper-content animated fadeInRight">
+      
+      <!-- 日付ナビゲーション -->
+      <div class="row m-b-lg">
+        <div class="col-lg-12">
+          <div class="ibox">
+            <div class="ibox-content text-center p-lg">
+              <div class="row">
+                <div class="col-md-8 col-md-offset-2">
+                  <div class="btn-group btn-group-justified date-navigation" role="group">
+                    <a href="<%= manager_daily_reports_path(date: @prev_date) %>" 
+                       class="btn btn-white btn-lg">
+                      <i class="fa fa-chevron-left"></i> 前の日
+                      <small class="block text-muted"><%= @prev_date.strftime("%m/%d") %></small>
+                    </a>
+                    
+                    <div class="btn btn-primary btn-lg current-date">
+                      <i class="fa fa-calendar"></i> <%= @target_date.strftime("%m月%d日") %>
+                      <small class="block text-white"><%= @target_date.strftime("(%a)") %></small>
+                    </div>
+                    
+                    <a href="<%= manager_daily_reports_path(date: @next_date) %>" 
+                       class="btn btn-white btn-lg">
+                      次の日 <i class="fa fa-chevron-right"></i>
+                      <small class="block text-muted"><%= @next_date.strftime("%m/%d") %></small>
+                    </a>
+                  </div>
+                  
+                  <!-- 日付直接選択 -->
+                  <div class="m-t-md">
+                    <input type="date" 
+                           class="form-control text-center" 
+                           id="dateSelector" 
+                           value="<%= @target_date.strftime('%Y-%m-%d') %>">
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 統計情報 -->
+      <div class="row m-b-lg">
+        <div class="col-lg-3 col-md-6">
+          <div class="widget style1 navy-bg">
+            <div class="row">
+              <div class="col-xs-4">
+                <i class="fa fa-file-text-o fa-3x"></i>
+              </div>
+              <div class="col-xs-8 text-right">
+                <span>提出済み日報</span>
+                <h2 class="font-bold"><%= @report_statistics[:submitted_count] %></h2>
+                <small>/ <%= @report_statistics[:total_users] %>名</small>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <div class="col-lg-3 col-md-6">
+          <div class="widget style1 lazur-bg">
+            <div class="row">
+              <div class="col-xs-4">
+                <i class="fa fa-percent fa-3x"></i>
+              </div>
+              <div class="col-xs-8 text-right">
+                <span>提出率</span>
+                <h2 class="font-bold"><%= @report_statistics[:submission_rate] %>%</h2>
+                <small>日報提出状況</small>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <div class="col-lg-3 col-md-6">
+          <div class="widget style1 yellow-bg">
+            <div class="row">
+              <div class="col-xs-4">
+                <i class="fa fa-clock-o fa-3x"></i>
+              </div>
+              <div class="col-xs-8 text-right">
+                <span>総作業時間</span>
+                <h2 class="font-bold"><%= @report_statistics[:total_work_hours] %></h2>
+                <small>時間</small>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <div class="col-lg-3 col-md-6">
+          <div class="widget style1 red-bg">
+            <div class="row">
+              <div class="col-xs-4">
+                <i class="fa fa-moon-o fa-3x"></i>
+              </div>
+              <div class="col-xs-8 text-right">
+                <span>残業申請</span>
+                <h2 class="font-bold"><%= @report_statistics[:overtime_requests] %></h2>
+                <small>承認待ち</small>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 日報一覧 -->
+      <div class="row">
+        <div class="col-lg-12">
+          <div class="ibox">
+            <div class="ibox-title">
+              <h5>
+                <i class="fa fa-list"></i> 社員別日報一覧
+              </h5>
+              <div class="ibox-tools">
+                <button class="btn btn-xs btn-white" id="expandAllBtn">
+                  <i class="fa fa-expand"></i> 全て展開
+                </button>
+                <button class="btn btn-xs btn-white" id="collapseAllBtn">
+                  <i class="fa fa-compress"></i> 全て折りたたみ
+                </button>
+              </div>
+            </div>
+            <div class="ibox-content">
+              
+              <% if @users_with_reports.any? %>
+                <div class="report-list">
+                  <% @users_with_reports.each do |user| %>
+                    <% daily_report = user.daily_reports.find { |dr| dr.date == @target_date } %>
+                    <% total_minutes = daily_report&.daily_report_projects&.sum(&:minutes) || 0 %>
+                    
+                    <div class="report-item <%= 'no-report' unless daily_report %>" 
+                         data-user-id="<%= user.id %>">
+                      
+                      <!-- ユーザー情報ヘッダー -->
+                      <div class="report-header" data-toggle="collapse" 
+                           data-target="#report-<%= user.id %>" 
+                           aria-expanded="false">
+                        <div class="row">
+                          <div class="col-md-6">
+                            <div class="user-info">
+                              <% if user.avatar.attached? %>
+                                <%= image_tag user.avatar_thumbnail, 
+                                    class: "img-circle user-avatar", 
+                                    size: "40x40" %>
+                              <% else %>
+                                <div class="user-avatar-placeholder">
+                                  <i class="fa fa-user"></i>
+                                </div>
+                              <% end %>
+                              
+                              <div class="user-details">
+                                <h4 class="user-name">
+                                  <%= user.name %>
+                                  <% if daily_report %>
+                                    <span class="label label-primary">提出済み</span>
+                                  <% else %>
+                                    <span class="label label-default">未提出</span>
+                                  <% end %>
+                                </h4>
+                                <small class="text-muted">
+                                  <i class="fa fa-building-o"></i> 
+                                  <%= user.department&.name || '部署未設定' %>
+                                </small>
+                              </div>
+                            </div>
+                          </div>
+                          
+                          <div class="col-md-6 text-right">
+                            <% if daily_report %>
+                              <div class="report-summary">
+                                <span class="work-hours">
+                                  <i class="fa fa-clock-o text-navy"></i>
+                                  <%= (total_minutes / 60.0).round(1) %>時間
+                                </span>
+                                <% if total_minutes > 480 %>
+                                  <span class="label label-warning m-l-xs">残業</span>
+                                <% end %>
+                              </div>
+                            <% else %>
+                              <span class="text-muted">
+                                <i class="fa fa-exclamation-triangle"></i> 未提出
+                              </span>
+                            <% end %>
+                            
+                            <i class="fa fa-chevron-down collapse-icon m-l-md"></i>
+                          </div>
+                        </div>
+                      </div>
+
+                      <!-- 詳細コンテンツ（折りたたみ） -->
+                      <div class="collapse report-details" id="report-<%= user.id %>">
+                        <% if daily_report %>
+                          <div class="report-content">
+                            
+                            <!-- 作業記録 -->
+                            <% if daily_report.daily_report_projects.any? %>
+                              <div class="work-records m-b-md">
+                                <h5><i class="fa fa-tasks"></i> 作業記録</h5>
+                                <div class="table-responsive">
+                                  <table class="table table-striped table-hover">
+                                    <thead>
+                                      <tr>
+                                        <th><i class="fa fa-building-o"></i> 顧客</th>
+                                        <th><i class="fa fa-folder-o"></i> 案件</th>
+                                        <th><i class="fa fa-clock-o"></i> 時間</th>
+                                        <th><i class="fa fa-moon-o"></i> 残業</th>
+                                        <th><i class="fa fa-file-text-o"></i> 内容</th>
+                                      </tr>
+                                    </thead>
+                                    <tbody>
+                                      <% daily_report.daily_report_projects.each do |work| %>
+                                        <tr>
+                                          <td><%= work.project&.client&.name || '不明' %></td>
+                                          <td><%= work.project&.name || '不明' %></td>
+                                          <td>
+                                            <span class="badge badge-info">
+                                              <%= (work.minutes / 60.0).round(1) %>h
+                                            </span>
+                                          </td>
+                                          <td>
+                                            <% if work.is_overtime_approved %>
+                                              <span class="label label-success">
+                                                <i class="fa fa-check"></i> 承認済み
+                                              </span>
+                                            <% elsif work.is_overtime_requested %>
+                                              <span class="label label-warning">
+                                                <i class="fa fa-clock-o"></i> 申請中
+                                              </span>
+                                            <% else %>
+                                              <span class="text-muted">-</span>
+                                            <% end %>
+                                          </td>
+                                          <td>
+                                            <% if work.description.present? %>
+                                              <div class="work-description">
+                                                <%= truncate(work.description, length: 80) %>
+                                              </div>
+                                            <% else %>
+                                              <span class="text-muted">記載なし</span>
+                                            <% end %>
+                                          </td>
+                                        </tr>
+                                      <% end %>
+                                    </tbody>
+                                  </table>
+                                </div>
+                              </div>
+                            <% end %>
+
+                            <!-- 日報本文 -->
+                            <div class="report-text">
+                              <h5><i class="fa fa-file-text-o"></i> 日報内容</h5>
+                              <% if daily_report.content.present? %>
+                                <div class="well">
+                                  <%= simple_format(h(daily_report.content)) %>
+                                </div>
+                              <% else %>
+                                <p class="text-muted">日報内容が記載されていません</p>
+                              <% end %>
+                            </div>
+                          </div>
+                        <% else %>
+                          <div class="no-report-message text-center p-lg">
+                            <i class="fa fa-exclamation-circle fa-3x text-muted m-b-md"></i>
+                            <h4 class="text-muted">この日の日報は提出されていません</h4>
+                          </div>
+                        <% end %>
+                      </div>
+                    </div>
+                  <% end %>
+                </div>
+              <% else %>
+                <div class="empty-state text-center p-xl">
+                  <i class="fa fa-users fa-4x text-muted m-b-md"></i>
+                  <h3 class="text-muted">社員データが見つかりません</h3>
+                </div>
+              <% end %>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <%= render 'shared/footer' %>
+  </div>
+</div>
+
+<style>
+/* ===== チーム日報管理画面専用スタイル ===== */
+
+/* 日付ナビゲーション */
+.date-navigation .btn {
+  transition: all 0.3s ease;
+}
+
+.date-navigation .btn:hover:not(.current-date) {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+.current-date {
+  cursor: default !important;
+}
+
+/* 日報アイテム */
+.report-item {
+  border: 1px solid #e7eaec;
+  border-radius: 8px;
+  margin-bottom: 15px;
+  background: #ffffff;
+  transition: all 0.3s ease;
+}
+
+.report-item:hover {
+  box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+  border-color: #1ab394;
+}
+
+.report-item.no-report {
+  background: #f8f9fa;
+  border-color: #dee2e6;
+}
+
+.report-item.no-report:hover {
+  border-color: #f8ac59;
+}
+
+/* ヘッダー部分 */
+.report-header {
+  padding: 20px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.report-header:hover {
+  background-color: #f8f9fa;
+}
+
+/* ユーザー情報 */
+.user-info {
+  display: flex;
+  align-items: center;
+}
+
+.user-avatar {
+  border: 2px solid #e7eaec;
+  margin-right: 15px;
+}
+
+.user-avatar-placeholder {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: #e7eaec;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 15px;
+  color: #999;
+}
+
+.user-details {
+  flex: 1;
+}
+
+.user-name {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.user-name .label {
+  font-size: 10px;
+  margin-left: 8px;
+  vertical-align: middle;
+}
+
+/* 作業時間表示 */
+.work-hours {
+  font-size: 16px;
+  font-weight: 600;
+  color: #1ab394;
+}
+
+/* 折りたたみアイコン */
+.collapse-icon {
+  transition: transform 0.3s ease;
+  color: #999;
+}
+
+.report-header[aria-expanded="true"] .collapse-icon {
+  transform: rotate(180deg);
+}
+
+/* 詳細コンテンツ */
+.report-details {
+  border-top: 1px solid #e7eaec;
+  background: #fafafa;
+}
+
+.report-content {
+  padding: 20px;
+}
+
+.report-content h5 {
+  color: #2f4050;
+  font-weight: 600;
+  margin-bottom: 15px;
+  padding-bottom: 8px;
+  border-bottom: 2px solid #1ab394;
+}
+
+/* 作業記録テーブル */
+.work-records .table {
+  background: white;
+  border-radius: 4px;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.work-records .table th {
+  background: #f8f9fa;
+  font-weight: 600;
+  font-size: 12px;
+  border-bottom: 2px solid #e7eaec;
+}
+
+.work-description {
+  max-width: 200px;
+  word-wrap: break-word;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+/* 日報本文 */
+.report-text .well {
+  background: white;
+  border: 1px solid #e7eaec;
+  border-left: 4px solid #1ab394;
+  font-size: 14px;
+  line-height: 1.6;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+/* 未提出メッセージ */
+.no-report-message {
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  border-radius: 8px;
+  margin: 20px;
+}
+
+/* レスポンシブ対応 */
+@media (max-width: 768px) {
+  .date-navigation .btn small {
+    display: none;
+  }
+  
+  .report-header {
+    padding: 15px;
+  }
+  
+  .user-info {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  .user-avatar {
+    margin-bottom: 10px;
+  }
+  
+  .report-summary {
+    margin-top: 10px;
+    text-align: left !important;
+  }
+  
+  .work-records .table-responsive {
+    font-size: 12px;
+  }
+}
+
+@media (max-width: 480px) {
+  .btn-group-justified {
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .btn-group-justified .btn {
+    border-radius: 4px !important;
+    margin-bottom: 5px;
+  }
+  
+  .current-date {
+    order: -1;
+    margin-bottom: 15px;
+  }
+}
+</style>
+
+<script>
+$(document).ready(function() {
+  
+  // 日付選択機能
+  $('#dateSelector').on('change', function() {
+    const selectedDate = $(this).val();
+    if (selectedDate) {
+      window.location.href = '<%= manager_daily_reports_path %>?date=' + selectedDate;
+    }
+  });
+  
+  // 全て展開ボタン
+  $('#expandAllBtn').click(function() {
+    $('.report-details').collapse('show');
+    $(this).prop('disabled', true);
+    $('#collapseAllBtn').prop('disabled', false);
+  });
+  
+  // 全て折りたたみボタン
+  $('#collapseAllBtn').click(function() {
+    $('.report-details').collapse('hide');
+    $(this).prop('disabled', true);
+    $('#expandAllBtn').prop('disabled', false);
+  });
+  
+  // 折りたたみ状態の監視
+  $('.report-details').on('shown.bs.collapse hidden.bs.collapse', function() {
+    updateToggleButtons();
+  });
+  
+  function updateToggleButtons() {
+    const totalItems = $('.report-details').length;
+    const expandedItems = $('.report-details.in').length;
+    
+    $('#expandAllBtn').prop('disabled', expandedItems === totalItems);
+    $('#collapseAllBtn').prop('disabled', expandedItems === 0);
+  }
+  
+  // 初期状態のボタン設定
+  updateToggleButtons();
+  
+  // 統計ウィジェットのアニメーション
+  $('.widget h2').each(function() {
+    const $this = $(this);
+    const countTo = parseInt($this.text());
+    
+    if (!isNaN(countTo)) {
+      $({ countNum: 0 }).animate({
+        countNum: countTo
+      }, {
+        duration: 1000,
+        easing: 'swing',
+        step: function() {
+          $this.text(Math.floor(this.countNum));
+        },
+        complete: function() {
+          $this.text(countTo);
+        }
+      });
+    }
+  });
+});
+</script>
