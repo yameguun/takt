@@ -8349,3 +8349,47 @@ body.md-skin {
   margin-bottom: 25px;
   margin-top: 0;
 }
+
+/* ログアウトフォームをナビゲーションに統合 */
+.navbar-logout-form {
+  display: inline-block;
+  margin: 0;
+  padding: 0;
+}
+
+/* ログアウトボタンをリンク風にスタイリング */
+.nav-logout-btn {
+  /* 既存のナビリンクスタイルを継承 */
+  color: #999c9e;
+  font-weight: 600;
+  padding: 20px 10px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font-size: 14px;
+  line-height: 1;
+  text-decoration: none;
+  min-height: 50px;
+  width: 100%;
+  text-align: left;
+}
+
+/* アイコンのマージン */
+.nav-logout-btn i {
+  margin-right: 6px;
+}
+
+/* ホバー時のスタイル */
+.nav-logout-btn:hover,
+.nav-logout-btn:focus {
+  color: #fff;
+  background-color: transparent;
+  text-decoration: none;
+  outline: none;
+}
+
+/* フォーカス時のアクセシビリティ */
+.nav-logout-btn:focus {
+  outline: 2px solid #1ab394;
+  outline-offset: 2px;
+}
