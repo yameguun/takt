@@ -43,3 +43,19 @@ ja:
       almost_x_years:
         one: "1年近く"
         other: "%{count}年近く"
+  activerecord:
+    errors:
+      messages:
+        record_invalid: "入力内容にエラーがあります"
+        blank: "を入力してください"
+        not_a_number: "は数値で入力してください"
+        greater_than: "は%{count}より大きい値にしてください"
+        less_than_or_equal_to: "は%{count}以下の値にしてください"
+    models:
+      daily_report_project: "作業記録"
+    attributes:
+      daily_report_project:
+        minutes: "作業時間（分）"
+        client_id: "顧客"
+        project_id: "プロジェクト"
+        description: "作業内容"

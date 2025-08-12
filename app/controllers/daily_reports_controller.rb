@@ -35,7 +35,7 @@ class DailyReportsController < BaseController
       if params[:works].present?
         params[:works].each do |index, work_params|
           # hoursをminutesに変換
-          minutes = work_params[:hours].to_i * 60 if work_params[:hours].present?
+          minutes = work_params[:minutes]
           
           # 既存のレコードがあるかチェック（hidden fieldで送られてくるwork_idを使用）
           if params[:existing_work_ids] && params[:existing_work_ids][index].present?
@@ -78,12 +78,12 @@ class DailyReportsController < BaseController
       redirect_to daily_reports_path(report_date: @write_date)
     end
     
-  rescue ActiveRecord::RecordInvalid => e
-    flash[:danger] = e.record.errors.full_messages.join(", ")
-    redirect_to daily_reports_path(report_date: @write_date)
-  rescue => e
-    flash[:danger] = "予期せぬエラーが発生しました: #{e.message}"
-    redirect_to daily_reports_path(report_date: @write_date)
+  #rescue ActiveRecord::RecordInvalid => e
+  #  flash[:danger] = e.record.errors.full_messages.join(", ")
+  #  redirect_to daily_reports_path(report_date: @write_date)
+  #rescue => e
+  #  flash[:danger] = "予期せぬエラーが発生しました: #{e.message}"
+  #  redirect_to daily_reports_path(report_date: @write_date)
   end
 
   def comments

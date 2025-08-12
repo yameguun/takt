@@ -1,4 +1,5 @@
 class Api::DailyReportProjectsController < BaseController
+  skip_before_action :verify_authenticity_token
   before_action :set_daily_report_project
 
   def request_overtime
