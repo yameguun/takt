@@ -954,6 +954,8 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+  console.log('Calendar page loaded without Turbo');
+  
   // HTMLエスケープ関数
   function escapeHtml(text) {
     if (!text) return '';
@@ -967,7 +969,7 @@ document.addEventListener('DOMContentLoaded', function() {
     return String(text).replace(/[&<>"']/g, function(m) { return map[m]; });
   }
   
-  // モーダル制御
+  // モーダル制御（シンプル版）
   function showModal(modalId) {
     const modal = document.getElementById(modalId);
     if (!modal) return;
@@ -980,10 +982,9 @@ document.addEventListener('DOMContentLoaded', function() {
     // バックドロップを追加
     const backdrop = document.createElement('div');
     backdrop.className = 'modal-backdrop fade in';
-    backdrop.setAttribute('data-modal', modalId);
     document.body.appendChild(backdrop);
     
-    // 閉じる処理を設定
+    // 閉じる処理
     const closeModal = function() {
       modal.style.display = 'none';
       modal.classList.remove('in');
@@ -994,13 +995,9 @@ document.addEventListener('DOMContentLoaded', function() {
       }
     };
     
-    // イベントリスナーを設定
-    const closeBtn = modal.querySelector('.close');
-    if (closeBtn) closeBtn.onclick = closeModal;
-    
-    const dismissBtns = modal.querySelectorAll('[data-dismiss="modal"]');
-    dismissBtns.forEach(btn => btn.onclick = closeModal);
-    
+    // イベント設定
+    modal.querySelector('.close').onclick = closeModal;
+    modal.querySelectorAll('[data-dismiss="modal"]').forEach(btn => btn.onclick = closeModal);
     backdrop.onclick = closeModal;
     
     // ESCキーで閉じる
@@ -1088,7 +1085,7 @@ document.addEventListener('DOMContentLoaded', function() {
     });
   });
   
-  // コメント表示
+  // コメント表示関数
   function displayComments(comments) {
     const managerCommentsList = document.getElementById('managerCommentsList');
     if (!managerCommentsList) return;
@@ -1147,34 +1144,33 @@ document.addEventListener('DOMContentLoaded', function() {
     const notification = document.createElement('div');
     notification.className = `notification ${type}`;
     notification.innerHTML = `
-      <button class="close" aria-label="閉じる">&times;</button>
+      <button class="close">&times;</button>
       <i class="fa ${iconClass}"></i> ${escapeHtml(message)}
     `;
     
     document.body.appendChild(notification);
     
-    // アニメーション表示
-    requestAnimationFrame(() => {
-      notification.classList.add('show');
-    });
-    
     // 閉じるボタンのイベント
     const closeBtn = notification.querySelector('.close');
-    const closeNotification = () => {
-      notification.classList.remove('show');
-      setTimeout(() => {
+    if (closeBtn) {
+      closeBtn.addEventListener('click', function() {
         if (notification && notification.parentNode) {
           notification.parentNode.removeChild(notification);
         }
-      }, 300);
-    };
-    
-    if (closeBtn) {
-      closeBtn.addEventListener('click', closeNotification);
+      });
     }
     
     // 3秒後に自動で消す
-    setTimeout(closeNotification, 3000);
+    setTimeout(function() {
+      if (notification && notification.parentNode) {
+        notification.style.opacity = '0';
+        setTimeout(() => {
+          if (notification && notification.parentNode) {
+            notification.parentNode.removeChild(notification);
+          }
+        }, 300);
+      }
+    }, 3000);
   }
 });
 </script>
