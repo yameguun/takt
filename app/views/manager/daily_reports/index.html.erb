@@ -150,7 +150,7 @@
                   <table class="table table-hover table-striped m-b-none">
                     <thead>
                       <tr class="table-header">
-                        <th style="width: 200px;">
+                        <th style="width: 180px;">
                           <i class="fa fa-user"></i> 社員情報
                         </th>
                         <th style="width: 80px;" class="text-center">
@@ -162,8 +162,11 @@
                         <th>
                           <i class="fa fa-tasks"></i> 作業記録
                         </th>
-                        <th style="width: 350px;">
+                        <th style="width: 300px;">
                           <i class="fa fa-file-text-o"></i> 日報内容
+                        </th>
+                        <th style="width: 150px;" class="text-center">
+                          <i class="fa fa-comments"></i> コメント
                         </th>
                       </tr>
                     </thead>
@@ -172,6 +175,7 @@
                         <% daily_report = @reports_by_user_id[user.id] %>
                         <% works = daily_report&.daily_report_projects || [] %>
                         <% total_minutes = works.sum(&:minutes) %>
+                        <% comments_count = daily_report&.comments&.count || 0 %>
                         
                         <tr class="report-row <%= 'no-report-row' unless daily_report %>">
                           <!-- 社員情報 -->
@@ -301,6 +305,28 @@
                               <span class="text-muted">-</span>
                             <% end %>
                           </td>
+
+                          <!-- コメント -->
+                          <td class="text-center comments-cell">
+                            <% if daily_report %>
+                              <div class="comment-section">
+                                <button class="btn btn-sm btn-primary comment-btn" 
+                                        data-report-id="<%= daily_report.id %>"
+                                        data-user-name="<%= user.name %>">
+                                  <i class="fa fa-comment"></i> コメント
+                                  <% if comments_count > 0 %>
+                                    <span class="badge comment-count" id="comment-count-<%= daily_report.id %>">
+                                      <%= comments_count %>
+                                    </span>
+                                  <% else %>
+                                    <span class="badge comment-count" id="comment-count-<%= daily_report.id %>" style="display: none;">0</span>
+                                  <% end %>
+                                </button>
+                              </div>
+                            <% else %>
+                              <span class="text-muted">-</span>
+                            <% end %>
+                          </td>
                         </tr>
                       <% end %>
                     </tbody>
@@ -344,10 +370,52 @@
   </div>
 </div>
 
-<style>
-/* ===== フラット一覧表示専用スタイル ===== */
+<!-- コメントモーダル -->
+<div class="modal fade" id="commentModal" tabindex="-1" role="dialog">
+  <div class="modal-dialog modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+        <h4 class="modal-title">
+          <i class="fa fa-comments"></i> <span id="commentModalUserName"></span>さんの日報へのコメント
+        </h4>
+      </div>
+      <div class="modal-body">
+        <!-- 既存コメント一覧 -->
+        <div id="commentsList" class="comments-list">
+          <!-- コメントが動的に挿入される -->
+        </div>
+        
+        <!-- 新規コメント投稿フォーム -->
+        <div class="comment-form-section">
+          <div class="hr-line-dashed"></div>
+          <h5><i class="fa fa-pencil"></i> 新しいコメントを追加</h5>
+          <form id="commentForm">
+            <div class="form-group">
+              <textarea class="form-control" 
+                        id="commentContent" 
+                        name="content" 
+                        rows="4" 
+                        placeholder="コメントを入力してください..."
+                        required></textarea>
+            </div>
+            <div class="form-group text-right">
+              <button type="button" class="btn btn-default" data-dismiss="modal">キャンセル</button>
+              <button type="submit" class="btn btn-primary" id="submitCommentBtn">
+                <i class="fa fa-send"></i> コメントを投稿
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
 
-/* 日付ナビゲーション */
+<style>
+/* ===== 基本スタイル ===== */
 .date-navigation .btn {
   transition: all 0.3s ease;
 }
@@ -604,6 +672,146 @@
   font-size: 11px;
 }
 
+/* コメントセル */
+.comments-cell {
+  padding: 15px 8px;
+  vertical-align: middle;
+}
+
+.comment-btn {
+  position: relative;
+  border-radius: 20px;
+  font-size: 12px;
+  transition: all 0.3s ease;
+}
+
+.comment-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.comment-btn .badge {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  background: #ed5565;
+  color: white;
+  font-size: 9px;
+  min-width: 16px;
+  height: 16px;
+  line-height: 16px;
+  border-radius: 8px;
+}
+
+/* コメントモーダル */
+.comments-list {
+  max-height: 400px;
+  overflow-y: auto;
+  margin-bottom: 20px;
+}
+
+.comment-item {
+  border: 1px solid #e7eaec;
+  border-radius: 8px;
+  padding: 15px;
+  margin-bottom: 15px;
+  background: #fafafa;
+  transition: all 0.3s ease;
+  position: relative;
+}
+
+.comment-item:hover {
+  background: #f5f5f5;
+  border-color: #1ab394;
+}
+
+.comment-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.comment-user-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.comment-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 2px solid #e7eaec;
+  object-fit: cover;
+}
+
+.comment-avatar-placeholder {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: #e7eaec;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #999;
+  font-size: 12px;
+  border: 2px solid #e7eaec;
+}
+
+.comment-user-name {
+  font-weight: 600;
+  color: #2f4050;
+  font-size: 14px;
+}
+
+.comment-date {
+  font-size: 11px;
+  color: #999;
+}
+
+.comment-actions {
+  display: flex;
+  gap: 5px;
+}
+
+.delete-comment-btn {
+  padding: 2px 6px;
+  font-size: 10px;
+  border-radius: 4px;
+}
+
+.comment-content {
+  font-size: 13px;
+  line-height: 1.5;
+  color: #495057;
+  white-space: pre-wrap;
+}
+
+.comment-form-section {
+  background: #f8f9fa;
+  border-radius: 8px;
+  padding: 20px;
+  margin-top: 20px;
+}
+
+.comment-form-section h5 {
+  color: #2f4050;
+  margin-bottom: 15px;
+}
+
+.empty-comments {
+  text-align: center;
+  padding: 40px 20px;
+  color: #999;
+}
+
+.empty-comments i {
+  font-size: 48px;
+  margin-bottom: 15px;
+  color: #ddd;
+}
+
 /* モーダル */
 .report-full-content {
   font-size: 14px;
@@ -612,6 +820,45 @@
   white-space: pre-wrap;
   max-height: 400px;
   overflow-y: auto;
+}
+
+/* 通知 */
+.notification {
+  position: fixed;
+  top: 70px;
+  right: 20px;
+  z-index: 9999;
+  min-width: 300px;
+  padding: 15px;
+  border-radius: 4px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  transition: all 0.3s ease;
+}
+
+.notification.success {
+  background: #d4edda;
+  border: 1px solid #c3e6cb;
+  color: #155724;
+}
+
+.notification.error {
+  background: #f8d7da;
+  border: 1px solid #f5c6cb;
+  color: #721c24;
+}
+
+.notification .close {
+  float: right;
+  background: none;
+  border: none;
+  font-size: 18px;
+  cursor: pointer;
+  color: inherit;
+  opacity: 0.7;
+}
+
+.notification .close:hover {
+  opacity: 1;
 }
 
 /* レスポンシブ対応 */
@@ -648,7 +895,9 @@
   .table th:nth-child(4),
   .table td:nth-child(4),
   .table th:nth-child(5),
-  .table td:nth-child(5) {
+  .table td:nth-child(5),
+  .table th:nth-child(6),
+  .table td:nth-child(6) {
     display: none;
   }
 }
@@ -680,100 +929,469 @@
 
 /* スクロールバーのスタイリング */
 .work-items-compact::-webkit-scrollbar,
-.report-full-content::-webkit-scrollbar {
+.report-full-content::-webkit-scrollbar,
+.comments-list::-webkit-scrollbar {
   width: 4px;
 }
 
 .work-items-compact::-webkit-scrollbar-track,
-.report-full-content::-webkit-scrollbar-track {
+.report-full-content::-webkit-scrollbar-track,
+.comments-list::-webkit-scrollbar-track {
   background: #f1f1f1;
   border-radius: 2px;
 }
 
 .work-items-compact::-webkit-scrollbar-thumb,
-.report-full-content::-webkit-scrollbar-thumb {
+.report-full-content::-webkit-scrollbar-thumb,
+.comments-list::-webkit-scrollbar-thumb {
   background: #1ab394;
   border-radius: 2px;
 }
 
 .work-items-compact::-webkit-scrollbar-thumb:hover,
-.report-full-content::-webkit-scrollbar-thumb:hover {
+.report-full-content::-webkit-scrollbar-thumb:hover,
+.comments-list::-webkit-scrollbar-thumb:hover {
   background: #17987e;
 }
 </style>
 
 <script>
-$(document).ready(function() {
+document.addEventListener('DOMContentLoaded', function() {
+  let currentReportId = null;
+  let commentsData = {};
+  
+  // HTMLエスケープ関数
+  function escapeHtml(text) {
+    const map = {
+      '&': '&amp;',
+      '<': '&lt;',
+      '>': '&gt;',
+      '"': '&quot;',
+      "'": '&#039;'
+    };
+    return text.replace(/[&<>"']/g, function(m) { return map[m]; });
+  }
+  
+  // サーバーサイドからのコメントデータを取得
+  <% @reports_by_user_id.each do |user_id, daily_report| %>
+    <% if daily_report %>
+      commentsData[<%= daily_report.id %>] = [
+        <% daily_report.comments.includes(:user).each do |comment| %>
+        {
+          id: <%= comment.id %>,
+          content: '<%= j(comment.content) %>',
+          user_name: '<%= comment.user.name %>',
+          user_avatar_url: '<%= comment.user.avatar.attached? ? j(url_for(comment.user.avatar_thumbnail)) : "" %>',
+          created_at: '<%= time_ago_in_words(comment.created_at) %>前',
+          can_delete: <%= comment.user_id == current_user.id %>
+        },
+        <% end %>
+      ];
+    <% end %>
+  <% end %>
+  
+  // モーダル制御
+  function showModal(modalId) {
+    const modal = document.getElementById(modalId);
+    if (!modal) return;
+
+    modal.style.display = 'block';
+    modal.classList.add('in');
+    document.body.classList.add('modal-open');
+    
+    // バックドロップを追加
+    const backdrop = document.createElement('div');
+    backdrop.className = 'modal-backdrop fade in';
+    backdrop.setAttribute('data-modal', modalId);
+    document.body.appendChild(backdrop);
+    
+    // 閉じる処理を設定
+    const closeModal = function() {
+      modal.style.display = 'none';
+      modal.classList.remove('in');
+      document.body.classList.remove('modal-open');
+      if (backdrop && backdrop.parentNode) {
+        backdrop.parentNode.removeChild(backdrop);
+      }
+    };
+    
+    // イベントリスナーを設定
+    const closeBtn = modal.querySelector('.close');
+    if (closeBtn) closeBtn.onclick = closeModal;
+    
+    const dismissBtns = modal.querySelectorAll('[data-dismiss="modal"]');
+    dismissBtns.forEach(btn => btn.onclick = closeModal);
+    
+    backdrop.onclick = closeModal;
+    
+    // ESCキーで閉じる
+    const escapeHandler = function(e) {
+      if (e.key === 'Escape') {
+        closeModal();
+        document.removeEventListener('keydown', escapeHandler);
+      }
+    };
+    document.addEventListener('keydown', escapeHandler);
+  }
   
   // 日付選択機能
-  $('#dateSelector').on('change', function() {
-    const selectedDate = $(this).val();
-    if (selectedDate) {
-      window.location.href = '<%= manager_daily_reports_path %>?date=' + selectedDate;
+  const dateSelector = document.getElementById('dateSelector');
+  if (dateSelector) {
+    dateSelector.addEventListener('change', function() {
+      const selectedDate = this.value;
+      if (selectedDate) {
+        window.location.href = '<%= manager_daily_reports_path %>?date=' + encodeURIComponent(selectedDate);
+      }
+    });
+  }
+  
+  // 全文表示ボタン
+  document.addEventListener('click', function(e) {
+    const button = e.target.closest('.show-full-content');
+    if (!button) return;
+    
+    const fullContent = button.getAttribute('data-content') || '';
+    const modalContent = document.getElementById('fullReportContent');
+    if (modalContent) {
+      modalContent.innerHTML = escapeHtml(fullContent).replace(/\n/g, '<br>');
+      showModal('reportContentModal');
     }
   });
   
-  // 全文表示ボタン
-  $(document).on('click', '.show-full-content', function() {
-    const fullContent = $(this).data('content');
-    $('#fullReportContent').html(fullContent.replace(/\n/g, '<br>'));
-    $('#reportContentModal').modal('show');
+  // コメントボタンクリック
+  document.addEventListener('click', function(e) {
+    const button = e.target.closest('.comment-btn');
+    if (!button) return;
+    
+    const reportId = parseInt(button.getAttribute('data-report-id'), 10);
+    const userName = button.getAttribute('data-user-name') || '';
+    
+    currentReportId = reportId;
+    const titleElement = document.getElementById('commentModalUserName');
+    if (titleElement) titleElement.textContent = userName;
+    
+    loadComments(reportId);
+    showModal('commentModal');
   });
   
-  // 統計ウィジェットのアニメーション
-  $('.widget h2').each(function() {
-    const $this = $(this);
-    const countTo = parseFloat($this.text());
+  // コメント読み込み
+  function loadComments(reportId) {
+    const commentsList = document.getElementById('commentsList');
+    if (!commentsList) return;
     
-    if (!isNaN(countTo)) {
-      $({ countNum: 0 }).animate({
-        countNum: countTo
-      }, {
-        duration: 1000,
-        easing: 'swing',
-        step: function() {
-          if (countTo % 1 === 0) {
-            $this.text(Math.floor(this.countNum));
-          } else {
-            $this.text(this.countNum.toFixed(1));
-          }
+    const comments = commentsData[reportId] || [];
+    
+    if (comments.length === 0) {
+      commentsList.innerHTML = `
+        <div class="empty-comments">
+          <i class="fa fa-comments-o"></i>
+          <h4>まだコメントがありません</h4>
+          <p class="text-muted">最初のコメントを投稿してみましょう</p>
+        </div>
+      `;
+      return;
+    }
+    
+    let html = '';
+    comments.forEach(comment => {
+      html += createCommentHtml(comment);
+    });
+    
+    commentsList.innerHTML = html;
+  }
+  
+  // コメントHTML生成
+  function createCommentHtml(comment) {
+    const avatarHtml = comment.user_avatar_url ? 
+      `<img src="${comment.user_avatar_url}" class="comment-avatar" alt="${escapeHtml(comment.user_name)}">` :
+      `<div class="comment-avatar-placeholder"><i class="fa fa-user"></i></div>`;
+    
+    const deleteButton = comment.can_delete ? 
+      `<button class="btn btn-xs btn-danger delete-comment-btn" data-comment-id="${comment.id}">
+        <i class="fa fa-trash"></i> 削除
+      </button>` : '';
+    
+    return `
+      <div class="comment-item" data-comment-id="${comment.id}">
+        <div class="comment-header">
+          <div class="comment-user-info">
+            ${avatarHtml}
+            <div>
+              <div class="comment-user-name">${escapeHtml(comment.user_name)}</div>
+              <div class="comment-date">${escapeHtml(comment.created_at)}</div>
+            </div>
+          </div>
+          <div class="comment-actions">
+            ${deleteButton}
+          </div>
+        </div>
+        <div class="comment-content">${escapeHtml(comment.content)}</div>
+      </div>
+    `;
+  }
+  
+  // コメント投稿
+  const commentForm = document.getElementById('commentForm');
+  if (commentForm) {
+    commentForm.addEventListener('submit', function(e) {
+      e.preventDefault();
+      
+      const contentElement = document.getElementById('commentContent');
+      if (!contentElement) return;
+      
+      const content = contentElement.value.trim();
+      if (!content) {
+        showNotification('コメントを入力してください', 'error');
+        return;
+      }
+      
+      const submitBtn = document.getElementById('submitCommentBtn');
+      const originalText = submitBtn.innerHTML;
+      
+      // ローディング状態
+      submitBtn.disabled = true;
+      submitBtn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> 投稿中...';
+      
+      // CSRFトークンを取得
+      const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+      
+      fetch(`/manager/daily_reports/${currentReportId}/comments`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRF-Token': csrfToken
         },
-        complete: function() {
-          $this.text(countTo % 1 === 0 ? countTo : countTo.toFixed(1));
+        body: JSON.stringify({
+          comment: {
+            content: content
+          }
+        })
+      })
+      .then(response => {
+        if (!response.ok) {
+          throw new Error('Network response was not ok');
+        }
+        return response.json();
+      })
+      .then(data => {
+        if (data.status === 'success') {
+          // コメントを追加
+          const commentsList = document.getElementById('commentsList');
+          const emptyComments = commentsList.querySelector('.empty-comments');
+          
+          if (emptyComments) {
+            commentsList.innerHTML = '';
+          }
+          
+          commentsList.insertAdjacentHTML('beforeend', createCommentHtml(data.comment));
+          
+          // データを更新
+          if (!commentsData[currentReportId]) {
+            commentsData[currentReportId] = [];
+          }
+          commentsData[currentReportId].push(data.comment);
+          
+          // フォームをリセット
+          contentElement.value = '';
+          
+          // コメント数バッジを更新
+          updateCommentBadge(currentReportId, data.comments_count);
+          
+          // 成功メッセージ
+          showNotification('コメントを投稿しました', 'success');
+        } else {
+          const message = data.errors ? data.errors.join(', ') : 'コメントの投稿に失敗しました';
+          showNotification(message, 'error');
+        }
+      })
+      .catch(error => {
+        console.error('Error:', error);
+        showNotification('コメントの投稿に失敗しました', 'error');
+      })
+      .finally(() => {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = originalText;
+      });
+    });
+  }
+  
+  // コメント削除
+  document.addEventListener('click', function(e) {
+    const button = e.target.closest('.delete-comment-btn');
+    if (!button) return;
+    
+    const commentId = parseInt(button.getAttribute('data-comment-id'), 10);
+    const commentItem = button.closest('.comment-item');
+    
+    if (!confirm('このコメントを削除しますか？')) {
+      return;
+    }
+    
+    const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+    
+    fetch(`/manager/daily_reports/${currentReportId}/comments/${commentId}`, {
+      method: 'DELETE',
+      headers: {
+        'X-CSRF-Token': csrfToken
+      }
+    })
+    .then(response => {
+      if (!response.ok) {
+        throw new Error('Network response was not ok');
+      }
+      return response.json();
+    })
+    .then(data => {
+      if (data.status === 'success') {
+        // アニメーション付きで削除
+        commentItem.style.opacity = '0';
+        commentItem.style.transform = 'translateX(-20px)';
+        
+        setTimeout(() => {
+          if (commentItem && commentItem.parentNode) {
+            commentItem.parentNode.removeChild(commentItem);
+          }
+          
+          // データから削除
+          if (commentsData[currentReportId]) {
+            commentsData[currentReportId] = commentsData[currentReportId].filter(c => c.id !== commentId);
+          }
+          
+          // コメントがなくなった場合の処理
+          const remainingComments = document.querySelectorAll('#commentsList .comment-item');
+          if (remainingComments.length === 0) {
+            loadComments(currentReportId);
+          }
+          
+          // コメント数バッジを更新
+          updateCommentBadge(currentReportId, data.comments_count);
+        }, 300);
+        
+        showNotification('コメントを削除しました', 'success');
+      } else {
+        const message = data.message || 'コメントの削除に失敗しました';
+        showNotification(message, 'error');
+      }
+    })
+    .catch(error => {
+      console.error('Error:', error);
+      showNotification('コメントの削除に失敗しました', 'error');
+    });
+  });
+  
+  // コメント数バッジ更新
+  function updateCommentBadge(reportId, count) {
+    const badge = document.getElementById(`comment-count-${reportId}`);
+    if (!badge) return;
+    
+    if (count > 0) {
+      badge.textContent = String(count);
+      badge.style.display = 'inline';
+    } else {
+      badge.style.display = 'none';
+    }
+  }
+  
+  // 通知表示
+  function showNotification(message, type) {
+    const iconClass = type === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle';
+    
+    const notification = document.createElement('div');
+    notification.className = `notification ${type}`;
+    notification.innerHTML = `
+      <button class="close">&times;</button>
+      <i class="fa ${iconClass}"></i> ${escapeHtml(message)}
+    `;
+    
+    document.body.appendChild(notification);
+    
+    // 閉じるボタンのイベント
+    const closeBtn = notification.querySelector('.close');
+    if (closeBtn) {
+      closeBtn.addEventListener('click', function() {
+        if (notification && notification.parentNode) {
+          notification.parentNode.removeChild(notification);
         }
       });
+    }
+    
+    // 3秒後に自動で消す
+    setTimeout(function() {
+      if (notification && notification.parentNode) {
+        notification.style.opacity = '0';
+        setTimeout(() => {
+          if (notification && notification.parentNode) {
+            notification.parentNode.removeChild(notification);
+          }
+        }, 300);
+      }
+    }, 3000);
+  }
+  
+  // 数値アニメーション関数
+  function animateNumber(element, start, end, duration, isInteger) {
+    const startTime = performance.now();
+    
+    function update(currentTime) {
+      const elapsed = currentTime - startTime;
+      const progress = Math.min(elapsed / duration, 1);
+      
+      // イージング関数（swing相当）
+      const easedProgress = 0.5 - Math.cos(progress * Math.PI) / 2;
+      const current = start + (end - start) * easedProgress;
+      
+      if (isInteger) {
+        element.textContent = Math.floor(current);
+      } else {
+        element.textContent = current.toFixed(1);
+      }
+      
+      if (progress < 1) {
+        requestAnimationFrame(update);
+      } else {
+        element.textContent = isInteger ? end : end.toFixed(1);
+      }
+    }
+    
+    requestAnimationFrame(update);
+  }
+  
+  // 統計ウィジェットのアニメーション
+  const widgetNumbers = document.querySelectorAll('.widget h2');
+  widgetNumbers.forEach(element => {
+    const countTo = parseFloat(element.textContent);
+    
+    if (!isNaN(countTo)) {
+      animateNumber(element, 0, countTo, 1000, countTo % 1 === 0);
     }
   });
   
   // 作業時間のアニメーション
-  $('.hours-number').each(function() {
-    const $this = $(this);
-    const countTo = parseFloat($this.text());
+  const hoursNumbers = document.querySelectorAll('.hours-number');
+  hoursNumbers.forEach(element => {
+    const countTo = parseFloat(element.textContent);
     
     if (!isNaN(countTo)) {
-      $({ countNum: 0 }).animate({
-        countNum: countTo
-      }, {
-        duration: 1200,
-        easing: 'swing',
-        step: function() {
-          $this.text(this.countNum.toFixed(1));
-        },
-        complete: function() {
-          $this.text(countTo.toFixed(1));
-        }
-      });
+      animateNumber(element, 0, countTo, 1200, false);
     }
   });
   
   // テーブル行のホバー効果
-  $('.report-row').hover(
-    function() {
-      $(this).find('.hours-number').addClass('text-primary');
-    },
-    function() {
-      $(this).find('.hours-number').removeClass('text-primary');
-    }
-  );
+  const reportRows = document.querySelectorAll('.report-row');
+  reportRows.forEach(row => {
+    row.addEventListener('mouseenter', function() {
+      const hoursNumber = this.querySelector('.hours-number');
+      if (hoursNumber) {
+        hoursNumber.classList.add('text-primary');
+      }
+    });
+    
+    row.addEventListener('mouseleave', function() {
+      const hoursNumber = this.querySelector('.hours-number');
+      if (hoursNumber) {
+        hoursNumber.classList.remove('text-primary');
+      }
+    });
+  });
 });
 </script>

@@ -1,4 +1,3 @@
-# app/controllers/manager/daily_reports_controller.rb
 class Manager::DailyReportsController < BaseController
   before_action :require_manager
   before_action :set_target_date
@@ -9,11 +8,11 @@ class Manager::DailyReportsController < BaseController
       .includes(:department)
       .order(:name)
 
-    # 指定日の日報を効率的に取得
+    # 指定日の日報を効率的に取得（コメントも同時に取得）
     @reports_by_user_id = DailyReport
       .where(user_id: @users.select(:id), date: @target_date)
-      .includes(daily_report_projects: { project: :client })
-      .where.not(daily_report_projects: {description: nil})
+      .includes({ comments: :user }, daily_report_projects: { project: :client })
+      .where.not(daily_report_projects: { description: nil })
       .index_by(&:user_id)
 
     @report_statistics = calculate_statistics
