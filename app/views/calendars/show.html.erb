@@ -155,8 +155,9 @@
                             <!-- マネージャーコメント表示 -->
                             <% if has_report && manager_comments_count > 0 %>
                               <button class="status-item comments-indicator comment-display-btn" 
-                                      data-date="<%= date.strftime('%Y-%m-%d') %>"
-                                      data-report-id="<%= report.id %>">
+                                      data-date="<%= date.strftime('%Y年%m月%d日') %>"
+                                      data-report-id="<%= report.id %>"
+                                      title="クリックしてコメントを確認">
                                 <i class="fa fa-comments"></i>
                                 <span>コメント</span>
                                 <span class="badge badge-comments"><%= manager_comments_count %></span>
@@ -310,14 +311,14 @@
 </div>
 
 <!-- マネージャーコメント表示モーダル -->
-<div class="modal fade" id="managerCommentsModal" tabindex="-1" role="dialog">
+<div class="modal fade" id="managerCommentsModal" tabindex="-1" role="dialog" aria-labelledby="managerCommentsModalTitle" aria-hidden="true">
   <div class="modal-dialog modal-lg" role="document">
     <div class="modal-content">
       <div class="modal-header">
-        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+        <button type="button" class="close" data-dismiss="modal" aria-label="閉じる">
           <span aria-hidden="true">&times;</span>
         </button>
-        <h4 class="modal-title">
+        <h4 class="modal-title" id="managerCommentsModalTitle">
           <i class="fa fa-comments text-info"></i> 
           <span id="commentsModalDate"></span> の日報へのマネージャーコメント
         </h4>
@@ -558,19 +559,25 @@
 
 /* マネージャーコメント表示インジケーター */
 .status-item.comments-indicator {
-  background: rgba(99, 102, 241, 0.15);
-  color: #6366f1;
-  border: 1px solid rgba(99, 102, 241, 0.4);
-  border-left: 3px solid #6366f1;
+  background: rgba(35, 198, 200, 0.15);
+  color: #23c6c8;
+  border: 1px solid rgba(35, 198, 200, 0.4);
+  border-left: 3px solid #23c6c8;
   cursor: pointer;
   position: relative;
   padding-right: 30px;
+  transition: all 0.3s ease;
 }
 
 .status-item.comments-indicator:hover {
-  background: rgba(99, 102, 241, 0.25);
-  transform: translateX(2px);
-  box-shadow: 0 2px 4px rgba(99, 102, 241, 0.3);
+  background: rgba(35, 198, 200, 0.25);
+  transform: translateX(3px) scale(1.02);
+  box-shadow: 0 3px 8px rgba(35, 198, 200, 0.4);
+  border-color: #23c6c8;
+}
+
+.status-item.comments-indicator:active {
+  transform: translateX(1px) scale(0.98);
 }
 
 .badge-comments {
@@ -578,7 +585,7 @@
   top: 50%;
   right: 6px;
   transform: translateY(-50%);
-  background: #6366f1;
+  background: #23c6c8;
   color: white;
   font-size: 8px;
   padding: 2px 5px;
@@ -641,6 +648,29 @@
 }
 
 /* モーダル関連 */
+.modal-content {
+  border-radius: 8px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+}
+
+.modal-header {
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  border-bottom: 2px solid #e7eaec;
+  border-radius: 8px 8px 0 0;
+}
+
+.modal-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: #2f4050;
+}
+
+.modal-body {
+  padding: 25px;
+  max-height: 70vh;
+  overflow-y: auto;
+}
+
 .report-content-section {
   margin-bottom: 20px;
 }
@@ -653,11 +683,13 @@
   line-height: 1.5;
   max-height: 150px;
   overflow-y: auto;
+  padding: 15px;
 }
 
 .comments-list-display {
   max-height: 400px;
   overflow-y: auto;
+  padding-right: 5px;
 }
 
 .comment-display-item {
@@ -671,7 +703,8 @@
 
 .comment-display-item:hover {
   background: #f5f5f5;
-  border-color: #6366f1;
+  border-color: #23c6c8;
+  transform: translateY(-1px);
 }
 
 .comment-display-header {
@@ -762,6 +795,13 @@
   border-radius: 4px;
   box-shadow: 0 2px 4px rgba(0,0,0,0.1);
   transition: all 0.3s ease;
+  opacity: 0;
+  transform: translateX(100%);
+}
+
+.notification.show {
+  opacity: 1;
+  transform: translateX(0);
 }
 
 .notification.success {
@@ -867,6 +907,14 @@
     font-size: 8px;
     padding: 1px 4px;
   }
+  
+  .modal-dialog {
+    margin: 10px;
+  }
+  
+  .modal-body {
+    padding: 15px;
+  }
 }
 
 /* スクロールバーのスタイリング */
@@ -883,13 +931,24 @@
 
 .comments-list-display::-webkit-scrollbar-thumb,
 .report-content-section .well::-webkit-scrollbar-thumb {
-  background: #6366f1;
+  background: #23c6c8;
   border-radius: 2px;
 }
 
 .comments-list-display::-webkit-scrollbar-thumb:hover,
 .report-content-section .well::-webkit-scrollbar-thumb:hover {
-  background: #4f46e5;
+  background: #21b9bb;
+}
+
+/* アクセシビリティ対応 */
+.status-item.comments-indicator:focus {
+  outline: 2px solid #23c6c8;
+  outline-offset: 2px;
+}
+
+.btn:focus {
+  outline: 2px solid #1ab394;
+  outline-offset: 2px;
 }
 </style>
 
@@ -897,6 +956,7 @@
 document.addEventListener('DOMContentLoaded', function() {
   // HTMLエスケープ関数
   function escapeHtml(text) {
+    if (!text) return '';
     const map = {
       '&': '&amp;',
       '<': '&lt;',
@@ -904,7 +964,7 @@ document.addEventListener('DOMContentLoaded', function() {
       '"': '&quot;',
       "'": '&#039;'
     };
-    return text.replace(/[&<>"']/g, function(m) { return map[m]; });
+    return String(text).replace(/[&<>"']/g, function(m) { return map[m]; });
   }
   
   // モーダル制御
@@ -914,6 +974,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     modal.style.display = 'block';
     modal.classList.add('in');
+    modal.setAttribute('aria-hidden', 'false');
     document.body.classList.add('modal-open');
     
     // バックドロップを追加
@@ -926,6 +987,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const closeModal = function() {
       modal.style.display = 'none';
       modal.classList.remove('in');
+      modal.setAttribute('aria-hidden', 'true');
       document.body.classList.remove('modal-open');
       if (backdrop && backdrop.parentNode) {
         backdrop.parentNode.removeChild(backdrop);
@@ -959,7 +1021,10 @@ document.addEventListener('DOMContentLoaded', function() {
     const reportId = button.getAttribute('data-report-id');
     const dateText = button.getAttribute('data-date');
     
-    if (!reportId) return;
+    if (!reportId) {
+      showNotification('日報IDが取得できませんでした', 'error');
+      return;
+    }
     
     // モーダルタイトルを設定
     const modalDateElement = document.getElementById('commentsModalDate');
@@ -1082,33 +1147,34 @@ document.addEventListener('DOMContentLoaded', function() {
     const notification = document.createElement('div');
     notification.className = `notification ${type}`;
     notification.innerHTML = `
-      <button class="close">&times;</button>
+      <button class="close" aria-label="閉じる">&times;</button>
       <i class="fa ${iconClass}"></i> ${escapeHtml(message)}
     `;
     
     document.body.appendChild(notification);
     
+    // アニメーション表示
+    requestAnimationFrame(() => {
+      notification.classList.add('show');
+    });
+    
     // 閉じるボタンのイベント
     const closeBtn = notification.querySelector('.close');
-    if (closeBtn) {
-      closeBtn.addEventListener('click', function() {
+    const closeNotification = () => {
+      notification.classList.remove('show');
+      setTimeout(() => {
         if (notification && notification.parentNode) {
           notification.parentNode.removeChild(notification);
         }
-      });
+      }, 300);
+    };
+    
+    if (closeBtn) {
+      closeBtn.addEventListener('click', closeNotification);
     }
     
     // 3秒後に自動で消す
-    setTimeout(function() {
-      if (notification && notification.parentNode) {
-        notification.style.opacity = '0';
-        setTimeout(() => {
-          if (notification && notification.parentNode) {
-            notification.parentNode.removeChild(notification);
-          }
-        }, 300);
-      }
-    }, 3000);
+    setTimeout(closeNotification, 3000);
   }
 });
 </script>
