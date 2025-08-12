@@ -13,6 +13,7 @@ class Manager::DailyReportsController < BaseController
     @reports_by_user_id = DailyReport
       .where(user_id: @users.select(:id), date: @target_date)
       .includes(daily_report_projects: { project: :client })
+      .where.not(daily_report_projects: {description: nil})
       .index_by(&:user_id)
 
     @report_statistics = calculate_statistics
