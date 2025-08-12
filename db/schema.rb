@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_08_06_060746) do
+ActiveRecord::Schema[8.0].define(version: 2025_08_12_035151) do
   create_table "action_mailbox_inbound_emails", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
     t.integer "status", default: 0, null: false
     t.string "message_id", null: false
@@ -86,6 +86,16 @@ ActiveRecord::Schema[8.0].define(version: 2025_08_06_060746) do
     t.index ["company_id"], name: "index_clients_on_company_id"
   end
 
+  create_table "comments", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
+    t.bigint "daily_report_id", null: false
+    t.bigint "user_id", null: false
+    t.text "content"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["daily_report_id"], name: "index_comments_on_daily_report_id"
+    t.index ["user_id"], name: "index_comments_on_user_id"
+  end
+
   create_table "companies", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
     t.string "name"
     t.datetime "created_at", null: false
@@ -151,6 +161,8 @@ ActiveRecord::Schema[8.0].define(version: 2025_08_06_060746) do
   add_foreign_key "active_storage_variant_records", "active_storage_blobs", column: "blob_id"
   add_foreign_key "authentications", "users"
   add_foreign_key "clients", "companies"
+  add_foreign_key "comments", "daily_reports"
+  add_foreign_key "comments", "users"
   add_foreign_key "daily_reports", "users"
   add_foreign_key "departments", "companies"
   add_foreign_key "projects", "clients"

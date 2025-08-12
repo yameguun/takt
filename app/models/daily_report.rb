@@ -20,7 +20,9 @@
 #
 class DailyReport < ApplicationRecord
   belongs_to :user
+
   has_many :daily_report_projects, inverse_of: :daily_report, dependent: :destroy
+  has_many :comments, dependent: :destroy
 
   accepts_nested_attributes_for :daily_report_projects
 
