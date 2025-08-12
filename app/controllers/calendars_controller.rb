@@ -5,13 +5,20 @@ class CalendarsController < BaseController
     range_start = @current_date.beginning_of_month.beginning_of_week(:sunday)
     range_end = @current_date.end_of_month.end_of_week(:sunday)
 
-    # 効率的なデータ取得
+    # 効率的なデータ取得（コメント情報も含む）
     reports = current_user.daily_reports
-                          .includes(:daily_report_projects)
+                          .includes(:daily_report_projects, comments: :user)
                           .where(date: range_start..range_end)
 
     @reports_by_date = reports.index_by(&:date)
     @daily_reports_dates = reports.pluck(:date).to_set
+
+    # コメント数の集計（マネージャーのコメントのみ）
+    @manager_comments_count_by_date = reports.joins(:comments)
+                                            .joins('JOIN users ON comments.user_id = users.id')
+                                            .where('users.permission > 0')
+                                            .group(:date)
+                                            .count
 
     # 残業データの計算（フラグベース + 時間ベース）
     overtime_data = calculate_overtime_data(reports, range_start, range_end)

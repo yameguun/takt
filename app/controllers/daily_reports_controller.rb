@@ -1,4 +1,6 @@
 class DailyReportsController < BaseController
+  include ActionView::Helpers::DateHelper
+  before_action :set_daily_report, only: [:comments]
 
   def index
     # 改善案
@@ -8,7 +10,10 @@ class DailyReportsController < BaseController
       Time.zone.today 
     end
 
-    @daily_report = current_user.daily_reports.find_or_create_by(date: @write_date)
+    # 日報と関連プロジェクトをN+1問題なく取得
+    @daily_report = current_user.daily_reports
+                                .includes(daily_report_projects: { project: :client })
+                                .find_or_create_by(date: @write_date)
   end
 
   def create
@@ -29,6 +34,9 @@ class DailyReportsController < BaseController
       # 作業データの処理
       if params[:works].present?
         params[:works].each do |index, work_params|
+          # hoursをminutesに変換
+          minutes = work_params[:hours].to_i * 60 if work_params[:hours].present?
+          
           # 既存のレコードがあるかチェック（hidden fieldで送られてくるwork_idを使用）
           if params[:existing_work_ids] && params[:existing_work_ids][index].present?
             work_id = params[:existing_work_ids][index].to_i
@@ -39,7 +47,7 @@ class DailyReportsController < BaseController
               daily_report_project.update!(
                 client_id: work_params[:client_id],
                 project_id: work_params[:project_id],
-                minutes: work_params[:minutes],
+                minutes: minutes, # hoursからminutesに変換した値を使用
                 description: work_params[:description]
               )
               submitted_work_ids << daily_report_project.id
@@ -49,7 +57,7 @@ class DailyReportsController < BaseController
             daily_report_project = @daily_report.daily_report_projects.create!(
               client_id: work_params[:client_id],
               project_id: work_params[:project_id],
-              minutes: work_params[:minutes],
+              minutes: minutes, # hoursからminutesに変換した値を使用
               description: work_params[:description]
             )
             submitted_work_ids << daily_report_project.id
@@ -78,7 +86,49 @@ class DailyReportsController < BaseController
     redirect_to daily_reports_path(report_date: @write_date)
   end
 
+  def comments
+    # マネージャーのコメントのみを取得
+    @comments = @daily_report.comments
+                             .joins(:user)
+                             .where('users.permission > 0') # permission > 0 のユーザー（マネージャー）のみ
+                             .includes(:user)
+                             .order(:created_at)
+    
+    respond_to do |format|
+      format.json do
+        render json: {
+          status: 'success',
+          comments: @comments.map { |comment| serialize_comment(comment) },
+          report_date: @daily_report.date.strftime('%Y年%m月%d日'),
+          report_content: @daily_report.content
+        }
+      end
+    end
+  end
+
   private
+
+  def set_daily_report
+    # current_userの日報のみを対象とする
+    @daily_report = current_user.daily_reports.find(params[:id])
+  rescue ActiveRecord::RecordNotFound
+    # 日報が見つからない場合はJSONエラーを返す
+    respond_to do |format|
+      format.json { render json: { status: 'error', message: '日報が見つかりません' }, status: 404 }
+    end
+  end
+
+  # コメントデータをJSON形式で整形するヘルパーメソッド
+  def serialize_comment(comment)
+    {
+      id: comment.id,
+      content: comment.content,
+      user_name: comment.user.name,
+      user_avatar_url: comment.user.avatar.attached? ? url_for(comment.user.avatar_thumbnail) : nil,
+      created_at: time_ago_in_words(comment.created_at) + '前',
+      is_manager: comment.user.is_manager? # マネージャーかどうかを識別するためのフラグ
+    }
+  end
 
   def daily_report_params
     formatted_params = {

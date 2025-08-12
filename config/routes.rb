@@ -9,8 +9,12 @@ Rails.application.routes.draw do
   get 'auth/slack', to: 'slack_authentications#new', as: 'slack_login'
   get 'auth/slack/callback', to: 'slack_authentications#create'
 
-  # 日報を書く
-  resources :daily_reports, only: [:index, :create], path: "/reports"
+  # 日報を書く（コメント表示機能を追加）
+  resources :daily_reports, only: [:index, :create], path: "/reports" do
+    member do
+      get :comments
+    end
+  end
 
   # カレンダー
   get 'calendar', to: 'calendars#show'

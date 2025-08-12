@@ -31,6 +31,7 @@
         overtime_hours_by_date = (@overtime_hours_by_date || {})
         overtime_minutes_by_date = (@overtime_minutes_by_date || {})
         reports_by_date = (@reports_by_date || {})
+        manager_comments_count_by_date = (@manager_comments_count_by_date || {})
       %>
 
       <!-- カレンダーメイン -->
@@ -98,6 +99,7 @@
                       has_overtime = overtime_dates.include?(date)
                       overtime_hours = overtime_hours_by_date[date].to_f
                       report = reports_by_date[date]
+                      manager_comments_count = manager_comments_count_by_date[date] || 0
                       
                       cell_classes = ['calendar-day']
                       cell_classes << 'other-month' unless is_current_month
@@ -149,6 +151,17 @@
                                 <span>残業</span>
                               </div>
                             <% end %>
+                            
+                            <!-- マネージャーコメント表示 -->
+                            <% if has_report && manager_comments_count > 0 %>
+                              <button class="status-item comments-indicator comment-display-btn" 
+                                      data-date="<%= date.strftime('%Y-%m-%d') %>"
+                                      data-report-id="<%= report.id %>">
+                                <i class="fa fa-comments"></i>
+                                <span>コメント</span>
+                                <span class="badge badge-comments"><%= manager_comments_count %></span>
+                              </button>
+                            <% end %>
                           <% end %>
                           
                           <!-- アクションボタン（平日のみ） -->
@@ -159,6 +172,14 @@
                                     class: 'btn btn-xs btn-white', 
                                     title: '日報を確認' do %>
                                   <i class="fa fa-eye"></i>
+                                <% end %>
+                                <% if manager_comments_count > 0 %>
+                                  <button class="btn btn-xs btn-info comment-view-btn" 
+                                          data-report-id="<%= report.id %>"
+                                          data-date="<%= date.strftime('%Y年%m月%d日') %>"
+                                          title="コメントを確認">
+                                    <i class="fa fa-comments"></i>
+                                  </button>
                                 <% end %>
                               <% else %>
                                 <%= link_to daily_reports_path(report_date: date.strftime('%Y-%m-%d')), 
@@ -193,6 +214,12 @@
                                 .select { |d, _| d.month == @current_date.month }
                                 .values
                                 .sum
+                                
+          # 今月のマネージャーコメント数
+          current_month_manager_comments = manager_comments_count_by_date
+                                          .select { |d, _| d.month == @current_date.month }
+                                          .values
+                                          .sum
         %>
         
         <div class="col-lg-3 col-md-6">
@@ -234,18 +261,18 @@
         <div class="col-lg-3 col-md-6">
           <div class="ibox float-e-margins">
             <div class="ibox-title">
-              <span class="label label-danger pull-right">
-                <%= [working_days - submitted_count, 0].max %>
+              <span class="label label-info pull-right">
+                <%= current_month_manager_comments %>
               </span>
-              <h5>未提出日数</h5>
+              <h5>受信コメント</h5>
             </div>
             <div class="ibox-content">
-              <% missing_percentage = working_days > 0 ? ((working_days - submitted_count).to_f / working_days * 100).round(1) : 0 %>
-              <h1 class="no-margins text-danger"><%= [missing_percentage, 0].max %>%</h1>
-              <div class="stat-percent font-bold text-danger">
-                <i class="fa fa-level-down"></i> 未提出率
+              <% commented_days = manager_comments_count_by_date.select { |d, _| d.month == @current_date.month }.count %>
+              <h1 class="no-margins text-info"><%= commented_days %></h1>
+              <div class="stat-percent font-bold text-info">
+                <i class="fa fa-comments"></i> コメント日数
               </div>
-              <small>要注意レベル</small>
+              <small>総コメント数: <%= current_month_manager_comments %>件</small>
             </div>
           </div>
         </div>
@@ -281,6 +308,46 @@
     <%= render 'shared/footer' %>
   </div>
 </div>
+
+<!-- マネージャーコメント表示モーダル -->
+<div class="modal fade" id="managerCommentsModal" tabindex="-1" role="dialog">
+  <div class="modal-dialog modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+        <h4 class="modal-title">
+          <i class="fa fa-comments text-info"></i> 
+          <span id="commentsModalDate"></span> の日報へのマネージャーコメント
+        </h4>
+      </div>
+      <div class="modal-body">
+        <!-- 日報内容 -->
+        <div class="report-content-section">
+          <h5><i class="fa fa-file-text-o text-navy"></i> 日報内容</h5>
+          <div class="well well-sm" id="reportContentDisplay">
+            <!-- 日報内容が動的に挿入される -->
+          </div>
+        </div>
+        
+        <div class="hr-line-dashed"></div>
+        
+        <!-- コメント一覧 -->
+        <div class="comments-section">
+          <h5><i class="fa fa-comments text-info"></i> マネージャーからのコメント</h5>
+          <div id="managerCommentsList" class="comments-list-display">
+            <!-- コメントが動的に挿入される -->
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-default" data-dismiss="modal">閉じる</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <style>
 /* カレンダー専用CSS - INSPINIAテーマ統合 */
 .calendar-container {
@@ -334,7 +401,7 @@
 }
 
 .calendar-day {
-  min-height: 85px;
+  min-height: 95px;
   border-right: 1px solid #e7eaec;
   border-bottom: 1px solid #e7eaec;
   padding: 8px;
@@ -445,6 +512,9 @@
   line-height: 1.3;
   font-weight: 500;
   transition: all 0.2s ease;
+  border: none;
+  background: transparent;
+  cursor: default;
 }
 
 .status-item:hover {
@@ -486,11 +556,37 @@
   border: 1px solid rgba(108, 117, 125, 0.3);
 }
 
-.status-item.weekend-status {
-  background: rgba(35, 198, 200, 0.15);
-  color: #23c6c8;
-  border: 1px solid rgba(35, 198, 200, 0.4);
-  border-left: 3px solid #23c6c8;
+/* マネージャーコメント表示インジケーター */
+.status-item.comments-indicator {
+  background: rgba(99, 102, 241, 0.15);
+  color: #6366f1;
+  border: 1px solid rgba(99, 102, 241, 0.4);
+  border-left: 3px solid #6366f1;
+  cursor: pointer;
+  position: relative;
+  padding-right: 30px;
+}
+
+.status-item.comments-indicator:hover {
+  background: rgba(99, 102, 241, 0.25);
+  transform: translateX(2px);
+  box-shadow: 0 2px 4px rgba(99, 102, 241, 0.3);
+}
+
+.badge-comments {
+  position: absolute;
+  top: 50%;
+  right: 6px;
+  transform: translateY(-50%);
+  background: #6366f1;
+  color: white;
+  font-size: 8px;
+  padding: 2px 5px;
+  border-radius: 8px;
+  min-width: 16px;
+  text-align: center;
+  height: 16px;
+  line-height: 12px;
 }
 
 .day-actions {
@@ -524,13 +620,13 @@
   background: #17a085;
 }
 
-.day-actions .btn-primary {
-  background: #1c84c6;
+.day-actions .btn-info {
+  background: #23c6c8;
   color: white;
 }
 
-.day-actions .btn-primary:hover {
-  background: #1a7bb9;
+.day-actions .btn-info:hover {
+  background: #21b9bb;
 }
 
 .day-actions .btn-white {
@@ -544,10 +640,160 @@
   border-color: #d2d2d2;
 }
 
+/* モーダル関連 */
+.report-content-section {
+  margin-bottom: 20px;
+}
+
+.report-content-section .well {
+  background: #f8f9fa;
+  border: 1px solid #e7eaec;
+  border-radius: 6px;
+  font-size: 13px;
+  line-height: 1.5;
+  max-height: 150px;
+  overflow-y: auto;
+}
+
+.comments-list-display {
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.comment-display-item {
+  border: 1px solid #e7eaec;
+  border-radius: 8px;
+  padding: 15px;
+  margin-bottom: 15px;
+  background: #fafafa;
+  transition: all 0.3s ease;
+}
+
+.comment-display-item:hover {
+  background: #f5f5f5;
+  border-color: #6366f1;
+}
+
+.comment-display-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.comment-display-user-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.comment-display-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 2px solid #e7eaec;
+  object-fit: cover;
+}
+
+.comment-display-avatar-placeholder {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: #e7eaec;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #999;
+  font-size: 12px;
+  border: 2px solid #e7eaec;
+}
+
+.comment-display-user-name {
+  font-weight: 600;
+  color: #2f4050;
+  font-size: 14px;
+}
+
+.comment-display-manager-badge {
+  background: #1ab394;
+  color: white;
+  font-size: 9px;
+  padding: 2px 6px;
+  border-radius: 10px;
+  margin-left: 5px;
+}
+
+.comment-display-date {
+  font-size: 11px;
+  color: #999;
+}
+
+.comment-display-content {
+  font-size: 13px;
+  line-height: 1.5;
+  color: #495057;
+  white-space: pre-wrap;
+  background: white;
+  padding: 10px;
+  border-radius: 4px;
+  border: 1px solid #e9ecef;
+}
+
+.empty-comments-display {
+  text-align: center;
+  padding: 40px 20px;
+  color: #999;
+}
+
+.empty-comments-display i {
+  font-size: 48px;
+  margin-bottom: 15px;
+  color: #ddd;
+}
+
+/* 通知 */
+.notification {
+  position: fixed;
+  top: 70px;
+  right: 20px;
+  z-index: 9999;
+  min-width: 300px;
+  padding: 15px;
+  border-radius: 4px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  transition: all 0.3s ease;
+}
+
+.notification.success {
+  background: #d4edda;
+  border: 1px solid #c3e6cb;
+  color: #155724;
+}
+
+.notification.error {
+  background: #f8d7da;
+  border: 1px solid #f5c6cb;
+  color: #721c24;
+}
+
+.notification .close {
+  float: right;
+  background: none;
+  border: none;
+  font-size: 18px;
+  cursor: pointer;
+  color: inherit;
+  opacity: 0.7;
+}
+
+.notification .close:hover {
+  opacity: 1;
+}
+
 /* レスポンシブ対応 */
 @media (max-width: 1200px) {
   .calendar-day {
-    min-height: 75px;
+    min-height: 85px;
     padding: 6px;
   }
   
@@ -559,7 +805,7 @@
 
 @media (max-width: 992px) {
   .calendar-day {
-    min-height: 65px;
+    min-height: 75px;
     padding: 4px;
   }
   
@@ -598,7 +844,7 @@
   }
   
   .calendar-day {
-    min-height: 55px;
+    min-height: 65px;
     padding: 3px;
   }
   
@@ -623,65 +869,246 @@
   }
 }
 
-@media (max-width: 480px) {
-  .calendar-container {
-    margin: 0 -10px;
-  }
-  
-  .calendar-day {
-    min-height: 45px;
-    padding: 2px;
-  }
-  
-  .day-number {
-    font-size: 11px;
-  }
-  
-  .status-item {
-    font-size: 6px;
-    gap: 1px;
-  }
-  
-  .day-content {
-    gap: 2px;
-  }
-  
-  .calendar-day-header {
-    padding: 6px 2px;
-    font-size: 9px;
-  }
+/* スクロールバーのスタイリング */
+.comments-list-display::-webkit-scrollbar,
+.report-content-section .well::-webkit-scrollbar {
+  width: 4px;
 }
 
-/* アクセシビリティ対応 */
-@media (prefers-reduced-motion: reduce) {
-  .calendar-day,
-  .status-item,
-  .day-actions .btn,
-  .today-badge {
-    transition: none;
-    animation: none;
-  }
-  
-  .calendar-day.today::before {
-    animation: none;
-  }
+.comments-list-display::-webkit-scrollbar-track,
+.report-content-section .well::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 2px;
 }
 
-/* 印刷対応 */
-@media print {
-  .calendar-container {
-    box-shadow: none;
-    border: 2px solid #000;
-  }
-  
-  .day-actions {
-    display: none;
-  }
-  
-  .calendar-day:hover {
-    background-color: inherit;
-    box-shadow: none;
-    transform: none;
-  }
+.comments-list-display::-webkit-scrollbar-thumb,
+.report-content-section .well::-webkit-scrollbar-thumb {
+  background: #6366f1;
+  border-radius: 2px;
+}
+
+.comments-list-display::-webkit-scrollbar-thumb:hover,
+.report-content-section .well::-webkit-scrollbar-thumb:hover {
+  background: #4f46e5;
 }
 </style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  // HTMLエスケープ関数
+  function escapeHtml(text) {
+    const map = {
+      '&': '&amp;',
+      '<': '&lt;',
+      '>': '&gt;',
+      '"': '&quot;',
+      "'": '&#039;'
+    };
+    return text.replace(/[&<>"']/g, function(m) { return map[m]; });
+  }
+  
+  // モーダル制御
+  function showModal(modalId) {
+    const modal = document.getElementById(modalId);
+    if (!modal) return;
+
+    modal.style.display = 'block';
+    modal.classList.add('in');
+    document.body.classList.add('modal-open');
+    
+    // バックドロップを追加
+    const backdrop = document.createElement('div');
+    backdrop.className = 'modal-backdrop fade in';
+    backdrop.setAttribute('data-modal', modalId);
+    document.body.appendChild(backdrop);
+    
+    // 閉じる処理を設定
+    const closeModal = function() {
+      modal.style.display = 'none';
+      modal.classList.remove('in');
+      document.body.classList.remove('modal-open');
+      if (backdrop && backdrop.parentNode) {
+        backdrop.parentNode.removeChild(backdrop);
+      }
+    };
+    
+    // イベントリスナーを設定
+    const closeBtn = modal.querySelector('.close');
+    if (closeBtn) closeBtn.onclick = closeModal;
+    
+    const dismissBtns = modal.querySelectorAll('[data-dismiss="modal"]');
+    dismissBtns.forEach(btn => btn.onclick = closeModal);
+    
+    backdrop.onclick = closeModal;
+    
+    // ESCキーで閉じる
+    const escapeHandler = function(e) {
+      if (e.key === 'Escape') {
+        closeModal();
+        document.removeEventListener('keydown', escapeHandler);
+      }
+    };
+    document.addEventListener('keydown', escapeHandler);
+  }
+  
+  // コメント表示ボタンのクリック処理
+  document.addEventListener('click', function(e) {
+    const button = e.target.closest('.comment-display-btn, .comment-view-btn');
+    if (!button) return;
+    
+    const reportId = button.getAttribute('data-report-id');
+    const dateText = button.getAttribute('data-date');
+    
+    if (!reportId) return;
+    
+    // モーダルタイトルを設定
+    const modalDateElement = document.getElementById('commentsModalDate');
+    if (modalDateElement) modalDateElement.textContent = dateText || '';
+    
+    // ローディング表示
+    const managerCommentsList = document.getElementById('managerCommentsList');
+    const reportContentDisplay = document.getElementById('reportContentDisplay');
+    
+    if (managerCommentsList) {
+      managerCommentsList.innerHTML = '<div class="text-center"><i class="fa fa-spinner fa-spin"></i> 読み込み中...</div>';
+    }
+    if (reportContentDisplay) {
+      reportContentDisplay.innerHTML = '<div class="text-center"><i class="fa fa-spinner fa-spin"></i> 読み込み中...</div>';
+    }
+    
+    // モーダルを表示
+    showModal('managerCommentsModal');
+    
+    // コメントデータを取得
+    fetch(`/reports/${reportId}/comments`, {
+      method: 'GET',
+      headers: {
+        'Accept': 'application/json'
+      }
+    })
+    .then(response => {
+      if (!response.ok) {
+        throw new Error('Network response was not ok');
+      }
+      return response.json();
+    })
+    .then(data => {
+      if (data.status === 'success') {
+        // 日報内容を表示
+        if (reportContentDisplay) {
+          if (data.report_content && data.report_content.trim()) {
+            reportContentDisplay.innerHTML = escapeHtml(data.report_content).replace(/\n/g, '<br>');
+          } else {
+            reportContentDisplay.innerHTML = '<span class="text-muted">日報内容がありません</span>';
+          }
+        }
+        
+        // コメントを表示
+        if (managerCommentsList) {
+          displayComments(data.comments);
+        }
+      } else {
+        showNotification('コメントの取得に失敗しました', 'error');
+      }
+    })
+    .catch(error => {
+      console.error('Error:', error);
+      showNotification('コメントの取得に失敗しました', 'error');
+      if (managerCommentsList) {
+        managerCommentsList.innerHTML = '<div class="text-center text-danger">コメントの読み込みに失敗しました</div>';
+      }
+      if (reportContentDisplay) {
+        reportContentDisplay.innerHTML = '<div class="text-center text-danger">日報内容の読み込みに失敗しました</div>';
+      }
+    });
+  });
+  
+  // コメント表示
+  function displayComments(comments) {
+    const managerCommentsList = document.getElementById('managerCommentsList');
+    if (!managerCommentsList) return;
+    
+    if (!comments || comments.length === 0) {
+      managerCommentsList.innerHTML = `
+        <div class="empty-comments-display">
+          <i class="fa fa-comments-o"></i>
+          <h4>マネージャーからのコメントはありません</h4>
+          <p class="text-muted">この日報にはまだマネージャーからのコメントがありません</p>
+        </div>
+      `;
+      return;
+    }
+    
+    let html = '';
+    comments.forEach(comment => {
+      html += createCommentDisplayHtml(comment);
+    });
+    
+    managerCommentsList.innerHTML = html;
+  }
+  
+  // コメント表示HTML生成
+  function createCommentDisplayHtml(comment) {
+    const avatarHtml = comment.user_avatar_url ? 
+      `<img src="${comment.user_avatar_url}" class="comment-display-avatar" alt="${escapeHtml(comment.user_name)}">` :
+      `<div class="comment-display-avatar-placeholder"><i class="fa fa-user"></i></div>`;
+    
+    const managerBadge = comment.is_manager ? 
+      `<span class="comment-display-manager-badge">マネージャー</span>` : '';
+    
+    return `
+      <div class="comment-display-item">
+        <div class="comment-display-header">
+          <div class="comment-display-user-info">
+            ${avatarHtml}
+            <div>
+              <div class="comment-display-user-name">
+                ${escapeHtml(comment.user_name)}
+                ${managerBadge}
+              </div>
+              <div class="comment-display-date">${escapeHtml(comment.created_at)}</div>
+            </div>
+          </div>
+        </div>
+        <div class="comment-display-content">${escapeHtml(comment.content)}</div>
+      </div>
+    `;
+  }
+  
+  // 通知表示
+  function showNotification(message, type) {
+    const iconClass = type === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle';
+    
+    const notification = document.createElement('div');
+    notification.className = `notification ${type}`;
+    notification.innerHTML = `
+      <button class="close">&times;</button>
+      <i class="fa ${iconClass}"></i> ${escapeHtml(message)}
+    `;
+    
+    document.body.appendChild(notification);
+    
+    // 閉じるボタンのイベント
+    const closeBtn = notification.querySelector('.close');
+    if (closeBtn) {
+      closeBtn.addEventListener('click', function() {
+        if (notification && notification.parentNode) {
+          notification.parentNode.removeChild(notification);
+        }
+      });
+    }
+    
+    // 3秒後に自動で消す
+    setTimeout(function() {
+      if (notification && notification.parentNode) {
+        notification.style.opacity = '0';
+        setTimeout(() => {
+          if (notification && notification.parentNode) {
+            notification.parentNode.removeChild(notification);
+          }
+        }, 300);
+      }
+    }, 3000);
+  }
+});
+</script>
