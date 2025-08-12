@@ -78,12 +78,12 @@ class DailyReportsController < BaseController
       redirect_to daily_reports_path(report_date: @write_date)
     end
     
-  #rescue ActiveRecord::RecordInvalid => e
-  #  flash[:danger] = e.record.errors.full_messages.join(", ")
-  #  redirect_to daily_reports_path(report_date: @write_date)
-  #rescue => e
-  #  flash[:danger] = "予期せぬエラーが発生しました: #{e.message}"
-  #  redirect_to daily_reports_path(report_date: @write_date)
+  rescue ActiveRecord::RecordInvalid => e
+   flash[:danger] = e.record.errors.full_messages.join(", ")
+   redirect_to daily_reports_path(report_date: @write_date)
+  rescue => e
+   flash[:danger] = "予期せぬエラーが発生しました: #{e.message}"
+   redirect_to daily_reports_path(report_date: @write_date)
   end
 
   def comments
