@@ -1,5 +1,5 @@
 class Manager::OvertimeRequestsController < BaseController
-  before_action :require_manager?
+  before_action :require_manager
   before_action :set_daily_report_project, only: [:approve]
 
   def index
@@ -42,9 +42,10 @@ class Manager::OvertimeRequestsController < BaseController
     end
   end
 
-  def require_manager?
-    unless current_user.is_manager?
-      redirect_to root_path, alert: 'アクセス権限がありません'
+  def require_manager
+    unless current_user&.is_manager?
+      flash[:danger] = "この機能を利用する権限がありません"
+      redirect_to root_path
     end
   end
 end
