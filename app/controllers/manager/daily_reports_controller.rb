@@ -3,9 +3,10 @@ class Manager::DailyReportsController < BaseController
   before_action :set_target_date
 
   def index
-    # N+1問題を回避した効率的なデータ取得
+    # N+1問題を回避した効率的なデータ取得（マネージャーを除外）
     @users = current_user.company.users
       .includes(:department)
+      .where(permission: 0)  # マネージャーを除外（permission > 0 がマネージャー）
       .order(:name)
 
     # 指定日の日報を効率的に取得（コメントも同時に取得）
