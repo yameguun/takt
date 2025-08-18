@@ -29,6 +29,9 @@
         <%= link_to manager_overtime_requests_path do %>
           <i class="fa fa-fire"></i>
           <span class="nav-label">残業申請の承認</span>
+          <% if @daily_report_project_count.to_i > 0 %>
+            <span class="label label-danger pull-right"><%= @daily_report_project_count.to_i %></span>
+          <% end %>
         <% end %>
       </li>
       <li class="<%= active_class('manager/daily_reports') %>">
