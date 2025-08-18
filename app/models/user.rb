@@ -36,12 +36,34 @@ class User < ApplicationRecord
   has_many :daily_reports, dependent: :destroy
   has_many :comments, dependent: :destroy
 
+  # 権限レベルの定義
+  PERMISSION_LEVELS = {
+    0 => '一般ユーザー',
+    1 => 'マネージャー',
+    2 => '管理者',
+    3 => 'システム管理者'
+  }.freeze
+
+  # マネージャー除外用スコープ
+  scope :non_managers, -> { where(permission: 0) }
+
   validates :email, presence: true, uniqueness: true, format: { with: URI::MailTo::EMAIL_REGEXP }
   validates :unit_price, presence: true, numericality: true
+  validates :permission, inclusion: { in: PERMISSION_LEVELS.keys }
   validate :acceptable_image
 
   def is_manager?
     self.permission > 0
+  end
+
+  # 権限レベルの日本語名を取得
+  def permission_name
+    PERMISSION_LEVELS[self.permission] || '不明'
+  end
+
+  # セレクトボックス用のオプション配列を生成
+  def self.permission_options
+    PERMISSION_LEVELS.map { |value, label| [label, value] }
   end
 
    # サムネイル版（100x100以内にリサイズ）

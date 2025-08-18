@@ -71,7 +71,7 @@
   <div class="form-group">
     <label class="col-sm-2 control-label">部署</label>
     <div class="col-sm-10">
-      <%= f.select :department_id, @company.departments.map{|o| [o.name, o.id]}, {}, {class: 'form-control'} %>
+      <%= f.select :department_id, @company.departments.map{|o| [o.name, o.id]}, { include_blank: '選択してください' }, {class: 'form-control'} %>
     </div>
   </div>
   
@@ -98,7 +98,14 @@
   <div class="form-group">
     <label class="col-sm-2 control-label">権限</label>
     <div class="col-sm-10">
-      <%= f.number_field :permission, class: 'form-control' %>
+      <%= f.select :permission, 
+          User.permission_options, 
+          { prompt: '権限を選択してください' }, 
+          { class: 'form-control' } %>
+      <span class="help-block m-b-none">
+        <i class="fa fa-info-circle"></i> 
+        権限レベルによって利用できる機能が異なります
+      </span>
       <% if f.object.errors.include?(:permission) %>
         <p style="color: red;"><%= f.object.errors.full_messages_for(:permission).first %></p>
       <% end %>
