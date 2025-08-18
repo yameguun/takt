@@ -1,6 +1,6 @@
 class WelcomeController < BaseController
   def index
-    # データが存在する月を取得
+    # データが存在する月を取得（非マネージャーのデータのみ対象）
     @available_months = get_available_months
     
     # 選択された月の決定
@@ -24,7 +24,7 @@ class WelcomeController < BaseController
     # 月の残業時間上限
     @overtime_limit = 45.0
 
-    # 残業時間集計SQL
+    # 残業時間集計SQL（マネージャー除外）
     sql = ApplicationRecord.sanitize_sql_array([<<-"EOS", @start_date, @end_date])
 (
 SELECT 
@@ -39,6 +39,7 @@ LEFT JOIN daily_reports ON users.id = daily_reports.user_id
 LEFT JOIN daily_report_projects ON daily_reports.id = daily_report_projects.daily_report_id
   AND daily_report_projects.is_overtime_approved = 1
   AND daily_report_projects.is_overtime_requested = 1
+WHERE users.permission = 0
 GROUP BY users.id, departments.name
 ORDER BY total_hours DESC
 ) AS users
@@ -63,10 +64,13 @@ EOS
   end
   
   def get_available_months
-    # MySQLに最適化されたクエリで残業データが存在する月を取得
+    # 非マネージャーの残業データが存在する月を取得（MySQL向け最適化）
     sql = <<-SQL
       SELECT DISTINCT DATE_FORMAT(daily_reports.date, '%Y-%m') AS ym
       FROM daily_reports
+      INNER JOIN users
+        ON users.id = daily_reports.user_id
+        AND users.permission = 0
       INNER JOIN daily_report_projects 
         ON daily_reports.id = daily_report_projects.daily_report_id
         AND daily_report_projects.is_overtime_approved = 1
