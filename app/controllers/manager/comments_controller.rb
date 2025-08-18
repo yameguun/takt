@@ -65,7 +65,7 @@ class Manager::CommentsController < BaseController
       id: comment.id,
       content: comment.content,
       user_name: comment.user.name,
-      user_avatar_url: comment.user.avatar.attached? ? url_for(comment.user.avatar_thumbnail) : nil,
+      user_avatar_url: comment.user.avatar.attached? ? url_for(comment.user.avatar) : nil,
       created_at: time_ago_in_words(comment.created_at) + '前',
       can_delete: comment.user_id == current_user.id
     }

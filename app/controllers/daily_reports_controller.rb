@@ -124,7 +124,7 @@ class DailyReportsController < BaseController
       id: comment.id,
       content: comment.content,
       user_name: comment.user.name,
-      user_avatar_url: comment.user.avatar.attached? ? url_for(comment.user.avatar_thumbnail) : nil,
+      user_avatar_url: comment.user.avatar.attached? ? url_for(comment.user.avatar) : nil,
       created_at: time_ago_in_words(comment.created_at) + '前',
       is_manager: comment.user.is_manager? # マネージャーかどうかを識別するためのフラグ
     }

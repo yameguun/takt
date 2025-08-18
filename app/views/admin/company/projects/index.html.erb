@@ -49,7 +49,7 @@
                       <td><%= number_to_currency(project.sales) %></td>
                       <td>
                         <%= link_to '修正', edit_admin_company_client_project_path(@company, @client, project), class: 'btn btn-primary btn-sm' %>
-                        <%= link_to '削除', admin_company_client_project_path(@company, @client, project), class: 'btn btn-danger btn-sm', data: { turbo_method: :delete, turbo_confirm: '削除しますか？' } %>
+                        <%= link_to '削除', admin_company_client_project_path(@company, @client, project), class: 'btn btn-danger btn-sm', method: :delete, data: { confirm: '削除しますか？' } %>
                       </td>
                     </tr>
                   <% end %>

@@ -81,13 +81,7 @@
                                 title: '編集' do %>
                               <i class="fa fa-pencil"></i>
                             <% end %>
-                            <%= link_to admin_company_user_path(@company, user), 
-                                class: 'btn btn-white btn-sm',
-                                data: { 
-                                  turbo_method: :delete, 
-                                  turbo_confirm: "#{user.name}を削除してもよろしいですか？" 
-                                },
-                                title: '削除' do %>
+                            <%= link_to admin_company_user_path(@company, user), class: 'btn btn-white btn-sm', method: :delete, data: { confirm: '削除しますか？' } do %>
                               <i class="fa fa-trash text-danger"></i>
                             <% end %>
                           </div>

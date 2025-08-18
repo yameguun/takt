@@ -16,9 +16,7 @@
                   alt: @user.name %>
               <p class="m-t-xs text-muted">現在の画像</p>
               <!-- 削除ボタン -->
-              <%= link_to remove_avatar_admin_company_user_path(@company, @user), 
-                  data: { turbo_method: :delete, confirm: "画像を削除してもよろしいですか？" },
-                  class: "btn btn-danger btn-xs" do %>
+              <%= link_to remove_avatar_admin_company_user_path(@company, @user), class: 'btn btn-danger btn-xs', method: :delete, data: { confirm: '削除しますか？' } do %>
                 <i class="fa fa-trash"></i> 画像を削除
               <% end %>
             </div>
