@@ -122,7 +122,7 @@
                         <div class="panel-body">
                           <div class="row">
                             <!-- 顧客名入力 -->
-                            <div class="col-md-6">
+                            <div class="col-md-4">
                               <div class="form-group">
                                 <label class="control-label font-bold">
                                   <i class="fa fa-building-o text-info"></i> 顧客名
@@ -149,7 +149,7 @@
                             </div>
 
                             <!-- 案件名入力 -->
-                            <div class="col-md-6">
+                            <div class="col-md-4">
                               <div class="form-group">
                                 <label class="control-label font-bold">
                                   <i class="fa fa-folder-open-o text-success"></i> 案件名
@@ -175,29 +175,36 @@
                                 <div class="suggestions-dropdown project-suggestions"></div>
                               </div>
                             </div>
-                          </div>
 
-                          <div class="row">
-                            <!-- 作業区分 -->
-                            <div class="col-md-3">
+                            <!-- 作業区分入力 -->
+                            <div class="col-md-4">
                               <div class="form-group">
                                 <label class="control-label font-bold">
                                   <i class="fa fa-tags text-primary"></i> 作業区分
                                   <span class="text-danger">*</span>
                                 </label>
-                                <select class="form-control task-type-select" 
-                                        name="works[<%= index %>][task_type_id]" 
-                                        required>
-                                  <option value="">選択してください</option>
-                                  <% @task_types.each do |task_type| %>
-                                    <option value="<%= task_type.id %>" <%= 'selected' if work.task_type_id == task_type.id %>>
-                                      <%= task_type.name %>
-                                    </option>
-                                  <% end %>
-                                </select>
+                                <div class="input-group">
+                                  <span class="input-group-addon bg-white">
+                                    <i class="fa fa-search"></i>
+                                  </span>
+                                  <input type="text" 
+                                         class="form-control task-type-input" 
+                                         name="works[<%= index %>][task_type]" 
+                                         placeholder="作業区分を検索・入力" 
+                                         required 
+                                         autocomplete="off" 
+                                         value="<%= work.try(:task_type).try(:name) %>">
+                                  <input type="hidden" 
+                                         class="task-type-id" 
+                                         name="works[<%= index %>][task_type_id]" 
+                                         value="<%= work.task_type_id %>">
+                                </div>
+                                <div class="suggestions-dropdown task-type-suggestions"></div>
                               </div>
                             </div>
+                          </div>
 
+                          <div class="row">
                             <!-- 作業時間入力 -->
                             <div class="col-md-3">
                               <div class="form-group">
@@ -224,7 +231,7 @@
                             </div>
 
                             <!-- 作業内容 -->
-                            <div class="col-md-6">
+                            <div class="col-md-9">
                               <div class="form-group">
                                 <label class="control-label font-bold">
                                   <i class="fa fa-pencil text-muted"></i> 作業内容
@@ -237,19 +244,6 @@
                               </div>
                             </div>
                           </div>
-
-                          <!-- 作業区分バッジ表示 -->
-                          <% if work.task_type.present? %>
-                            <div class="row">
-                              <div class="col-md-12">
-                                <div class="task-type-badge-container">
-                                  <span class="label label-primary">
-                                    <i class="fa fa-tag"></i> <%= work.task_type.name %>
-                                  </span>
-                                </div>
-                              </div>
-                            </div>
-                          <% end %>
 
                           <!-- 残業申請状態の表示 -->
                           <% if work.is_overtime_requested || work.is_overtime_approved %>
@@ -453,44 +447,6 @@
   color: #155724;
 }
 
-/* ===== 作業区分セレクトボックスのスタイル ===== */
-.task-type-select {
-  height: 38px;
-  padding: 6px 12px;
-  font-size: 14px;
-  line-height: 1.42857143;
-  color: #555;
-  background-color: #fff;
-  background-image: none;
-  border: 1px solid #e5e6e7;
-  border-radius: 3px;
-  transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
-}
-
-.task-type-select:focus {
-  border-color: #1ab394;
-  outline: 0;
-  box-shadow: 0 0 0 0.2rem rgba(26, 179, 148, 0.25);
-}
-
-.task-type-select option {
-  padding: 5px;
-}
-
-/* 作業区分バッジ */
-.task-type-badge-container {
-  margin-top: 10px;
-  padding-top: 10px;
-  border-top: 1px solid #f3f3f4;
-}
-
-.task-type-badge-container .label {
-  font-size: 11px;
-  padding: 5px 10px;
-  display: inline-block;
-  margin-right: 5px;
-}
-
 /* ===== 新しい合計時間ウィジェットデザイン ===== */
 .total-hours-summary {
   background: #ffffff !important;
@@ -622,10 +578,6 @@
     margin: 5px 0 0 0;
     text-align: center;
   }
-  
-  .task-type-select {
-    width: 100%;
-  }
 }
 
 @media (max-width: 480px) {
@@ -725,7 +677,6 @@
 $(document).ready(function() {
     let workIndex = $('.work-item-card').length;
     const COMPANY_ID = <%= current_user.company_id %>;
-    const TASK_TYPES = <%= @task_types.to_json.html_safe %>;
 
     // 日付変更時の処理
     $('#reportDate').on('change', function() {
@@ -735,45 +686,6 @@ $(document).ready(function() {
             window.location.href = `${currentPath}?report_date=${selectedDate}`;
         }
     });
-
-    // 作業区分選択時の処理
-    $(document).on('change', '.task-type-select', function() {
-        const select = $(this);
-        const selectedText = select.find('option:selected').text();
-        const workItem = select.closest('.work-item-card');
-        
-        // バッジ表示を更新
-        updateTaskTypeBadge(workItem, selectedText, select.val());
-    });
-
-    // 作業区分バッジ更新関数
-    function updateTaskTypeBadge(workItem, taskTypeName, taskTypeId) {
-        let badgeContainer = workItem.find('.task-type-badge-container');
-        
-        if (taskTypeId && taskTypeName !== '選択してください') {
-            if (badgeContainer.length === 0) {
-                // バッジコンテナが存在しない場合は作成
-                const badgeHtml = `
-                    <div class="row">
-                        <div class="col-md-12">
-                            <div class="task-type-badge-container">
-                                <span class="label label-primary">
-                                    <i class="fa fa-tag"></i> ${taskTypeName}
-                                </span>
-                            </div>
-                        </div>
-                    </div>
-                `;
-                workItem.find('.panel-body').append(badgeHtml);
-            } else {
-                // 既存のバッジを更新
-                badgeContainer.find('.label').html(`<i class="fa fa-tag"></i> ${taskTypeName}`);
-            }
-        } else {
-            // 作業区分が選択されていない場合はバッジを削除
-            badgeContainer.parent().parent().remove();
-        }
-    }
 
     // 残業申請ボタンの処理（作業単位）
     $(document).on('click', '.overtime-btn', async function() {
@@ -913,6 +825,20 @@ $(document).ready(function() {
         }
     }
 
+    // 作業区分検索API
+    async function searchTaskTypes(query = '') {
+        try {
+            const response = await fetch(`/api/task_types.json?name=${encodeURIComponent(query)}&company_id=<%= current_user.company_id %>`);
+            if (!response.ok) throw new Error('API request failed');
+            const data = await response.json();
+            return data.task_types || [];
+        } catch (error) {
+            console.error('作業区分検索エラー:', error);
+            showNotification('error', '作業区分の検索に失敗しました');
+            return [];
+        }
+    }
+
     // 通知表示
     function showNotification(type, message) {
         const alertClass = type === 'error' ? 'alert-danger' : 
@@ -945,8 +871,12 @@ $(document).ready(function() {
         }
 
         suggestions.forEach(item => {
+            let icon = 'fa-folder';
+            if (type === 'client') icon = 'fa-building';
+            else if (type === 'task-type') icon = 'fa-tag';
+            
             const div = $('<div class="suggestion-item"></div>')
-                .html(`<i class="fa fa-${type === 'client' ? 'building' : 'folder'} m-r-xs"></i> ${item.name}`)
+                .html(`<i class="fa ${icon} m-r-xs"></i> ${item.name}`)
                 .data('id', item.id)
                 .data('name', item.name);
             
@@ -966,6 +896,8 @@ $(document).ready(function() {
                     loadProjectSuggestions(workItem, id);
                 } else if (type === 'project') {
                     input.closest('.form-group').find('.project-id').val(id);
+                } else if (type === 'task-type') {
+                    input.closest('.form-group').find('.task-type-id').val(id);
                 }
                 
                 dropdown.hide();
@@ -1042,6 +974,27 @@ $(document).ready(function() {
         }
     });
 
+    // 作業区分入力イベント
+    $(document).on('input', '.task-type-input', async function() {
+        const input = $(this);
+        const query = input.val().trim();
+        
+        input.closest('.form-group').find('.task-type-id').val('');
+
+        if (query.length < 1) {
+            input.closest('.form-group').find('.task-type-suggestions').hide();
+            return;
+        }
+
+        input.addClass('loading');
+        try {
+            const taskTypes = await searchTaskTypes(query);
+            showSuggestions(input, taskTypes, 'task-type');
+        } finally {
+            input.removeClass('loading');
+        }
+    });
+
     // 案件入力フォーカス
     $(document).on('focus', '.project-input', async function() {
         const input = $(this);
@@ -1066,6 +1019,21 @@ $(document).ready(function() {
                 } catch (error) {
                     console.error('案件読み込みエラー:', error);
                 }
+            }
+        }
+    });
+
+    // 作業区分入力フォーカス
+    $(document).on('focus', '.task-type-input', async function() {
+        const input = $(this);
+        
+        if (input.val().trim() === '') {
+            input.addClass('loading');
+            try {
+                const taskTypes = await searchTaskTypes('');
+                showSuggestions(input, taskTypes, 'task-type');
+            } finally {
+                input.removeClass('loading');
             }
         }
     });
@@ -1122,19 +1090,8 @@ $(document).ready(function() {
         calculateTotalHours();
     });
 
-    // 作業区分オプション生成
-    function generateTaskTypeOptions(selectedId = null) {
-        let options = '<option value="">選択してください</option>';
-        TASK_TYPES.forEach(taskType => {
-            const selected = selectedId == taskType.id ? 'selected' : '';
-            options += `<option value="${taskType.id}" ${selected}>${taskType.name}</option>`;
-        });
-        return options;
-    }
-
     // 作業アイテム作成
     function createWorkItem(index) {
-        const taskTypeOptions = generateTaskTypeOptions();
         return `
             <div class="work-item-card animated fadeIn" data-work-index="${index}" data-work-id="">
                 <div class="panel panel-default">
@@ -1158,7 +1115,7 @@ $(document).ready(function() {
                     </div>
                     <div class="panel-body">
                         <div class="row">
-                            <div class="col-md-6">
+                            <div class="col-md-4">
                                 <div class="form-group">
                                     <label class="control-label font-bold">
                                         <i class="fa fa-building-o text-info"></i> 顧客名
@@ -1182,7 +1139,7 @@ $(document).ready(function() {
                                     <div class="suggestions-dropdown client-suggestions"></div>
                                 </div>
                             </div>
-                            <div class="col-md-6">
+                            <div class="col-md-4">
                                 <div class="form-group">
                                     <label class="control-label font-bold">
                                         <i class="fa fa-folder-open-o text-success"></i> 案件名
@@ -1207,21 +1164,32 @@ $(document).ready(function() {
                                     <div class="suggestions-dropdown project-suggestions"></div>
                                 </div>
                             </div>
-                        </div>
-                        <div class="row">
-                            <div class="col-md-3">
+                            <div class="col-md-4">
                                 <div class="form-group">
                                     <label class="control-label font-bold">
                                         <i class="fa fa-tags text-primary"></i> 作業区分
                                         <span class="text-danger">*</span>
                                     </label>
-                                    <select class="form-control task-type-select" 
-                                            name="works[${index}][task_type_id]" 
-                                            required>
-                                        ${taskTypeOptions}
-                                    </select>
+                                    <div class="input-group">
+                                        <span class="input-group-addon bg-white">
+                                            <i class="fa fa-search"></i>
+                                        </span>
+                                        <input type="text" 
+                                               class="form-control task-type-input" 
+                                               name="works[${index}][task_type]" 
+                                               placeholder="作業区分を検索・入力" 
+                                               required 
+                                               autocomplete="off">
+                                        <input type="hidden" 
+                                               class="task-type-id" 
+                                               name="works[${index}][task_type_id]" 
+                                               value="">
+                                    </div>
+                                    <div class="suggestions-dropdown task-type-suggestions"></div>
                                 </div>
                             </div>
+                        </div>
+                        <div class="row">
                             <div class="col-md-3">
                                 <div class="form-group">
                                     <label class="control-label font-bold">
@@ -1244,7 +1212,7 @@ $(document).ready(function() {
                                     </small>
                                 </div>
                             </div>
-                            <div class="col-md-6">
+                            <div class="col-md-9">
                                 <div class="form-group">
                                     <label class="control-label font-bold">
                                         <i class="fa fa-pencil text-muted"></i> 作業内容
@@ -1275,7 +1243,7 @@ $(document).ready(function() {
                 workItem.attr('data-work-index', visibleIndex);
                 
                 // name属性も更新（削除マークが付いていない項目のみ）
-                workItem.find('input, textarea, select').each(function() {
+                workItem.find('input, textarea').each(function() {
                     const name = $(this).attr('name');
                     if (name && !name.includes('existing_work_ids')) {
                         const newName = name.replace(/works\[\d+\]/, `works[${visibleIndex}]`);
@@ -1360,23 +1328,18 @@ $(document).ready(function() {
             const hours = $(this).find('.work-hours-input').val();
             const clientId = $(this).find('.client-id').val();
             const projectId = $(this).find('.project-id').val();
-            const taskTypeId = $(this).find('.task-type-select').val();
+            const taskType = $(this).find('.task-type-input').val();
+            const taskTypeId = $(this).find('.task-type-id').val();
 
-            if (!customer || !project || !hours || parseInt(hours) <= 0) {
+            if (!customer || !project || !hours || parseInt(hours) <= 0 || !taskType) {
                 hasError = true;
                 errorMessage = `作業 #${index + 1} の必須項目を入力してください`;
                 return false;
             }
 
-            if (!clientId || !projectId) {
+            if (!clientId || !projectId || !taskTypeId) {
                 hasError = true;
-                errorMessage = `作業 #${index + 1} の顧客・案件を選択リストから選択してください`;
-                return false;
-            }
-
-            if (!taskTypeId) {
-                hasError = true;
-                errorMessage = `作業 #${index + 1} の作業区分を選択してください`;
+                errorMessage = `作業 #${index + 1} の顧客・案件・作業区分を選択リストから選択してください`;
                 return false;
             }
         });

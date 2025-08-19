@@ -1,4 +1,4 @@
-class Api::DailyReportProjectsController < BaseController
+class Api::DailyReportProjectsController < ApplicationController
   skip_before_action :verify_authenticity_token
   before_action :set_daily_report_project
 
