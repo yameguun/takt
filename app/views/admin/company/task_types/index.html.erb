@@ -1,0 +1,61 @@
+<div id="wrapper">
+  <%= render 'admin/shared/header' %>
+  <div id="page-wrapper" class="gray-bg dashbard-1">
+    <%= render '/admin/shared/navbar' %>
+    <div class="row wrapper border-bottom white-bg page-heading">
+      <div class="col-lg-10">
+        <h2>作業区分</h2>
+        <ol class="breadcrumb">
+          <li>
+            <a href="/admin">Home</a>
+          </li>
+          <li>
+            <%= link_to @company.name, admin_companies_path %>
+          </li>
+          <li class="active">
+            <strong>作業区分</strong>
+          </li>
+        </ol>
+      </div>
+      <div class="col-lg-2"></div>
+    </div>
+    <div class="wrapper wrapper-content animated fadeInRight">
+      <div class="row">
+        <div class="col-lg-6">
+          <div class="ibox float-e-margins">
+            <div class="ibox-title" style="text-align: right;">
+              <%= link_to "新規登録", new_admin_company_task_type_path(@company), class: 'btn btn-primary' %>
+            </div>
+            <div class="ibox-content">
+              <table class="table table-bordered">
+                <thead>
+                  <tr>
+                    <th>ID</th>
+                    <th>作業区分</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <% @task_types.each do |task_type| %>
+                    <tr>
+                      <td><%= task_type.id %></td>
+                      <td><%= task_type.name %></td>
+                      <td>
+                        <%= link_to '修正', edit_admin_company_task_type_path(@company,task_type), class: 'btn btn-primary btn-sm' %>
+                        <%= link_to '削除', admin_company_task_type_path(@company,task_type), class: 'btn btn-danger btn-sm', method: :delete, data: { confirm: '削除しますか？' } %>
+                      </td>
+                    </tr>
+                  <% end %>
+                </tbody>
+              </table>
+              <%= paginate @task_types, theme: 'admin' %>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="wrapper wrapper-content">
+      <%= render 'admin/shared/footer' %>
+    </div>
+  </div>
+</div>

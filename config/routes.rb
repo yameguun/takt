@@ -62,6 +62,7 @@ Rails.application.routes.draw do
         resources :clients, except: [:show] do
           resources :projects, except: [:show]
         end
+        resources :task_types, except: [:show]
       end
     end
   end
