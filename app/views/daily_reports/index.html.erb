@@ -144,7 +144,7 @@
                                          name="works[<%= index %>][client_id]" 
                                          value="<%= work.try(:project).try(:client_id) || work.try(:client_id) %>">
                                 </div>
-                                <div class="suggestions-dropdown client-suggestions"></div>
+                                <div class="suggestions-dropdown client-suggestions" role="listbox" aria-label="顧客候補"></div>
                               </div>
                             </div>
 
@@ -172,7 +172,7 @@
                                          name="works[<%= index %>][project_id]" 
                                          value="<%= work.project_id %>">
                                 </div>
-                                <div class="suggestions-dropdown project-suggestions"></div>
+                                <div class="suggestions-dropdown project-suggestions" role="listbox" aria-label="案件候補"></div>
                               </div>
                             </div>
 
@@ -199,7 +199,7 @@
                                          name="works[<%= index %>][task_type_id]" 
                                          value="<%= work.task_type_id %>">
                                 </div>
-                                <div class="suggestions-dropdown task-type-suggestions"></div>
+                                <div class="suggestions-dropdown task-type-suggestions" role="listbox" aria-label="作業区分候補"></div>
                               </div>
                             </div>
                           </div>
@@ -262,7 +262,7 @@
                   <% end %>
                 </div>
 
-                <!-- 合計時間表示（改善されたデザイン） -->
+                <!-- 合計時間表示 -->
                 <div class="row m-t-lg">
                   <div class="col-lg-12">
                     <div id="totalHoursWidget" class="widget style1 total-hours-summary status-normal">
@@ -358,9 +358,10 @@
   padding: 20px;
 }
 
+/* ===== 改善されたサジェストドロップダウン ===== */
 .suggestions-dropdown {
   position: absolute;
-  background: white;
+  background: #fff;
   border: 1px solid #e7eaec;
   border-top: none;
   border-radius: 0 0 4px 4px;
@@ -368,9 +369,51 @@
   overflow-y: auto;
   width: calc(100% - 34px);
   left: 34px;
-  z-index: 1050;
+  z-index: 9999; /* 最前面に表示 */
   display: none;
-  box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  backdrop-filter: blur(2px);
+}
+
+/* 上方向表示 */
+.suggestions-dropdown.show-above {
+  top: auto;
+  bottom: 100%;
+  border-top: 1px solid #e7eaec;
+  border-bottom: none;
+  border-radius: 4px 4px 0 0;
+  box-shadow: 0 -4px 12px rgba(0,0,0,0.15);
+}
+
+/* 右寄せ表示 */
+.suggestions-dropdown.align-right {
+  left: auto;
+  right: 0;
+  width: calc(100% - 34px);
+}
+
+/* モバイル最適化 */
+@media (max-width: 768px) {
+  .suggestions-dropdown {
+    max-height: 200px;
+    width: calc(100% - 30px);
+    left: 30px;
+    font-size: 13px;
+  }
+  
+  .suggestions-dropdown.align-right {
+    width: 100%;
+    left: 0;
+  }
+}
+
+@media (max-width: 480px) {
+  .suggestions-dropdown {
+    max-height: 150px;
+    width: 100%;
+    left: 0;
+    font-size: 12px;
+  }
 }
 
 .suggestion-item {
@@ -379,9 +422,15 @@
   border-bottom: 1px solid #f3f3f4;
   transition: all 0.2s;
   font-size: 14px;
+  position: relative;
+  min-height: 44px; /* タッチターゲット最小サイズ */
+  display: flex;
+  align-items: center;
 }
 
-.suggestion-item:hover {
+.suggestion-item:hover,
+.suggestion-item.highlighted,
+.suggestion-item.active {
   background-color: #1ab394;
   color: white;
 }
@@ -390,6 +439,15 @@
   border-bottom: none;
 }
 
+/* キーボードナビゲーション用フォーカス */
+.suggestion-item:focus {
+  outline: 2px solid #1ab394;
+  outline-offset: -2px;
+  background-color: #1ab394;
+  color: white;
+}
+
+/* ローディング状態 */
 .loading {
   position: relative;
 }
@@ -447,7 +505,7 @@
   color: #155724;
 }
 
-/* ===== 新しい合計時間ウィジェットデザイン ===== */
+/* ===== 合計時間ウィジェットデザイン ===== */
 .total-hours-summary {
   background: #ffffff !important;
   color: inherit !important;
@@ -455,6 +513,8 @@
   border-left: 5px solid #1ab394;
   box-shadow: 0 2px 4px rgba(0,0,0,0.08);
   transition: all 0.3s ease;
+  position: relative;
+  z-index: 1; /* サジェストドロップダウンより低く */
 }
 
 .total-hours-summary h2,
@@ -524,7 +584,7 @@
   color: #c92a3a;
 }
 
-/* プログレスバーの調整 */
+/* プログレスバー */
 .progress-mini {
   height: 3px;
   margin-bottom: 0;
@@ -671,12 +731,35 @@
 .work-item-card.marked-for-deletion .panel {
   background-color: #f8f8f9;
 }
+
+/* スクロールバーカスタマイズ */
+.suggestions-dropdown::-webkit-scrollbar {
+  width: 6px;
+}
+
+.suggestions-dropdown::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 3px;
+}
+
+.suggestions-dropdown::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 3px;
+}
+
+.suggestions-dropdown::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
+}
 </style>
 
 <script>
 $(document).ready(function() {
     let workIndex = $('.work-item-card').length;
     const COMPANY_ID = <%= current_user.company_id %>;
+    
+    // キーボードナビゲーション用変数
+    let currentDropdown = null;
+    let currentSelectedIndex = -1;
 
     // 日付変更時の処理
     $('#reportDate').on('change', function() {
@@ -859,18 +942,21 @@ $(document).ready(function() {
         }, 5000);
     }
 
-    // サジェスト表示
+    // ===== 改善されたサジェスト表示機能 =====
     function showSuggestions(input, suggestions, type) {
         const dropdown = input.closest('.form-group').find('.suggestions-dropdown');
         dropdown.empty().hide();
+        currentDropdown = dropdown;
+        currentSelectedIndex = -1;
 
         if (suggestions.length === 0) {
             dropdown.append('<div class="suggestion-item text-muted text-center">検索結果がありません</div>');
+            positionDropdown(dropdown, input);
             dropdown.show();
             return;
         }
 
-        suggestions.forEach(item => {
+        suggestions.forEach((item, index) => {
             let icon = 'fa-folder';
             if (type === 'client') icon = 'fa-building';
             else if (type === 'task-type') icon = 'fa-tag';
@@ -878,35 +964,143 @@ $(document).ready(function() {
             const div = $('<div class="suggestion-item"></div>')
                 .html(`<i class="fa ${icon} m-r-xs"></i> ${item.name}`)
                 .data('id', item.id)
-                .data('name', item.name);
+                .data('name', item.name)
+                .data('index', index);
             
             div.click(function() {
-                const id = $(this).data('id');
-                const name = $(this).data('name');
-                
-                input.val(name);
-                
-                if (type === 'client') {
-                    input.closest('.form-group').find('.client-id').val(id);
-                    const workItem = input.closest('.work-item-card');
-                    const projectInput = workItem.find('.project-input');
-                    const projectIdInput = workItem.find('.project-id');
-                    projectInput.prop('disabled', false).val('').focus();
-                    projectIdInput.val('');
-                    loadProjectSuggestions(workItem, id);
-                } else if (type === 'project') {
-                    input.closest('.form-group').find('.project-id').val(id);
-                } else if (type === 'task-type') {
-                    input.closest('.form-group').find('.task-type-id').val(id);
-                }
-                
-                dropdown.hide();
+                selectSuggestion($(this), input, type);
+            });
+
+            // タッチデバイス対応
+            div.on('touchend', function(e) {
+                e.preventDefault();
+                selectSuggestion($(this), input, type);
             });
             
             dropdown.append(div);
         });
 
+        positionDropdown(dropdown, input);
         dropdown.show();
+    }
+
+    // ドロップダウンの位置調整
+    function positionDropdown(dropdown, input) {
+        const windowHeight = $(window).height();
+        const scrollTop = $(window).scrollTop();
+        const inputOffset = input.offset();
+        const inputHeight = input.outerHeight();
+        const inputBottom = inputOffset.top + inputHeight - scrollTop;
+        const dropdownHeight = Math.min(250, dropdown.get(0).scrollHeight || 250);
+        const spaceBelow = windowHeight - inputBottom;
+        const spaceAbove = inputOffset.top - scrollTop;
+
+        // 画面下部での上方向表示判定
+        if (spaceBelow < dropdownHeight + 20 && spaceAbove > dropdownHeight + 20) {
+            dropdown.addClass('show-above');
+        } else {
+            dropdown.removeClass('show-above');
+        }
+
+        // モバイル・作業区分での右寄せ判定
+        const isMobile = $(window).width() <= 768;
+        const isTaskType = input.hasClass('task-type-input');
+        const isRightColumn = input.closest('.col-md-4').index() === 2;
+        
+        if (isMobile || (isTaskType && isRightColumn)) {
+            dropdown.addClass('align-right');
+        } else {
+            dropdown.removeClass('align-right');
+        }
+    }
+
+    // サジェスト選択処理
+    function selectSuggestion(suggestionItem, input, type) {
+        const id = suggestionItem.data('id');
+        const name = suggestionItem.data('name');
+        
+        input.val(name);
+        
+        if (type === 'client') {
+            input.closest('.form-group').find('.client-id').val(id);
+            const workItem = input.closest('.work-item-card');
+            const projectInput = workItem.find('.project-input');
+            const projectIdInput = workItem.find('.project-id');
+            projectInput.prop('disabled', false).val('').focus();
+            projectIdInput.val('');
+            loadProjectSuggestions(workItem, id);
+        } else if (type === 'project') {
+            input.closest('.form-group').find('.project-id').val(id);
+        } else if (type === 'task-type') {
+            input.closest('.form-group').find('.task-type-id').val(id);
+        }
+        
+        currentDropdown.hide();
+        currentDropdown = null;
+        currentSelectedIndex = -1;
+    }
+
+    // ===== キーボードナビゲーション =====
+    $(document).on('keydown', '.client-input, .project-input, .task-type-input', function(e) {
+        if (!currentDropdown || !currentDropdown.is(':visible')) return;
+
+        const items = currentDropdown.find('.suggestion-item:not(.text-muted)');
+        const itemCount = items.length;
+
+        if (itemCount === 0) return;
+
+        switch(e.keyCode) {
+            case 38: // 上矢印
+                e.preventDefault();
+                currentSelectedIndex = currentSelectedIndex <= 0 ? itemCount - 1 : currentSelectedIndex - 1;
+                updateSelection(items);
+                break;
+                
+            case 40: // 下矢印
+                e.preventDefault();
+                currentSelectedIndex = currentSelectedIndex >= itemCount - 1 ? 0 : currentSelectedIndex + 1;
+                updateSelection(items);
+                break;
+                
+            case 13: // Enter
+                e.preventDefault();
+                if (currentSelectedIndex >= 0 && currentSelectedIndex < itemCount) {
+                    const selectedItem = items.eq(currentSelectedIndex);
+                    const inputType = $(this).hasClass('client-input') ? 'client' : 
+                                    $(this).hasClass('project-input') ? 'project' : 'task-type';
+                    selectSuggestion(selectedItem, $(this), inputType);
+                }
+                break;
+                
+            case 27: // Escape
+                e.preventDefault();
+                currentDropdown.hide();
+                currentDropdown = null;
+                currentSelectedIndex = -1;
+                break;
+        }
+    });
+
+    // 選択状態の更新
+    function updateSelection(items) {
+        items.removeClass('highlighted active');
+        if (currentSelectedIndex >= 0) {
+            const selectedItem = items.eq(currentSelectedIndex);
+            selectedItem.addClass('highlighted active');
+            
+            // 選択項目がビューに入るようにスクロール
+            const dropdown = currentDropdown;
+            const itemTop = selectedItem.position().top;
+            const itemHeight = selectedItem.outerHeight();
+            const dropdownHeight = dropdown.height();
+            const scrollTop = dropdown.scrollTop();
+
+            if (itemTop < 0) {
+                dropdown.scrollTop(scrollTop + itemTop);
+            } else if (itemTop + itemHeight > dropdownHeight) {
+                dropdown.scrollTop(scrollTop + itemTop + itemHeight - dropdownHeight);
+            }
+        }
     }
 
     // 案件サジェスト読み込み
@@ -1042,6 +1236,25 @@ $(document).ready(function() {
     $(document).on('click', function(e) {
         if (!$(e.target).closest('.form-group').length) {
             $('.suggestions-dropdown').hide();
+            currentDropdown = null;
+            currentSelectedIndex = -1;
+        }
+    });
+
+    // ウィンドウリサイズ時のドロップダウン位置調整
+    $(window).on('resize', function() {
+        if (currentDropdown && currentDropdown.is(':visible')) {
+            const input = currentDropdown.closest('.form-group').find('input[type="text"]');
+            positionDropdown(currentDropdown, input);
+        }
+    });
+
+    // スクロール時のドロップダウン非表示
+    $(window).on('scroll', function() {
+        if (currentDropdown && currentDropdown.is(':visible')) {
+            currentDropdown.hide();
+            currentDropdown = null;
+            currentSelectedIndex = -1;
         }
     });
 
@@ -1136,7 +1349,7 @@ $(document).ready(function() {
                                                name="works[${index}][client_id]" 
                                                value="">
                                     </div>
-                                    <div class="suggestions-dropdown client-suggestions"></div>
+                                    <div class="suggestions-dropdown client-suggestions" role="listbox" aria-label="顧客候補"></div>
                                 </div>
                             </div>
                             <div class="col-md-4">
@@ -1161,7 +1374,7 @@ $(document).ready(function() {
                                                name="works[${index}][project_id]" 
                                                value="">
                                     </div>
-                                    <div class="suggestions-dropdown project-suggestions"></div>
+                                    <div class="suggestions-dropdown project-suggestions" role="listbox" aria-label="案件候補"></div>
                                 </div>
                             </div>
                             <div class="col-md-4">
@@ -1185,7 +1398,7 @@ $(document).ready(function() {
                                                name="works[${index}][task_type_id]" 
                                                value="">
                                     </div>
-                                    <div class="suggestions-dropdown task-type-suggestions"></div>
+                                    <div class="suggestions-dropdown task-type-suggestions" role="listbox" aria-label="作業区分候補"></div>
                                 </div>
                             </div>
                         </div>
