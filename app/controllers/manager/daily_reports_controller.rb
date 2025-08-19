@@ -38,6 +38,8 @@ class Manager::DailyReportsController < BaseController
       ai_comment = call_ai_api(report_content)
       render json: { status: 'success', comment: ai_comment }
     rescue => e
+      Rails.logger.error "AI API Error: #{e.message}"
+      Rails.logger.error e.backtrace.join("\n")
       render json: { status: 'error', message: e.message }, status: :internal_server_error
     end
   end
@@ -124,7 +126,6 @@ class Manager::DailyReportsController < BaseController
   end
 
   def call_ai_api(query)
-
     api_key = ENV['AI_API_KEY']
     raise 'AI APIキーが設定されていません' if api_key.blank?
 
@@ -137,89 +138,75 @@ class Manager::DailyReportsController < BaseController
     request = Net::HTTP::Post.new(uri)
     request['Authorization'] = "Bearer #{api_key}"
     request['Content-Type'] = 'application/json'
-    request['Accept'] = 'text/event-stream'
+    # 重要: AcceptヘッダーをJSONに変更（SSEではなく）
+    request['Accept'] = 'application/json'
 
     request_body = {
       inputs: { query: query },
-      response_mode: "streaming",
-      user: "#{current_user.name}"
+      response_mode: "blocking",
+      user: current_user.name
     }
     request.body = request_body.to_json
 
-    collected_text = +''
-    raw_buffer = +''
-    message_count = 0
-
-    normalize_encoding = ->(text) {
-      text.to_s.force_encoding('UTF-8').scrub
-    }
-
     begin
-      http.request(request) do |response|
-        unless response.is_a?(Net::HTTPSuccess)
-          error_body = +''
-          response.read_body { |chunk| error_body << chunk }
-          raise "API request failed with status: #{response.code}, body: #{error_body}"
-        end
-
-        catch(:stream_complete) do
-          response.read_body do |chunk|
-            raw_buffer << normalize_encoding.call(chunk)
-
-            lines = raw_buffer.split(/\r?\n/)
-            raw_buffer = lines.pop.to_s
-
-            lines.each do |line|
-              line = line.strip
-              next if line.empty?
-              next unless line.start_with?('data:')
-
-              data_part = line.sub(/^data:\s*/, '').strip
-              next if data_part.blank? || data_part == '[DONE]'
-
-              begin
-                data = JSON.parse(data_part)
-
-                case data['event']
-                when 'message'
-                  answer_piece = data['answer']
-                  if answer_piece.present?
-                    decoded_piece = decode_unicode_escapes(answer_piece)
-                    collected_text << decoded_piece
-                    message_count += 1
-                  end
-                when 'message_end'
-                  throw :stream_complete
-                when 'error'
-                  error_msg = data['message'] || 'Unknown error from AI API'
-                  raise "AI API error: #{error_msg}"
-                end
-              rescue JSON::ParserError
-                next
-              end
-            end
+      response = http.request(request)
+      
+      # HTTPステータスコードのチェック
+      unless response.is_a?(Net::HTTPSuccess)
+        error_message = "API request failed with status: #{response.code}"
+        begin
+          error_body = JSON.parse(response.body)
+          if error_body['message']
+            error_message += " - #{error_body['message']}"
           end
+        rescue JSON::ParserError
+          error_message += " - #{response.body.truncate(200)}"
         end
+        Rails.logger.error "AI API HTTP Error: #{error_message}"
+        raise error_message
+      end
 
-        process_remaining_buffer(raw_buffer, collected_text) if raw_buffer.present?
+      # レスポンスボディを直接JSONとしてパース（SSE処理は不要）
+      response_data = JSON.parse(response.body)
+      
+      # APIの実際のレスポンス形式に基づいて処理
+      if response_data['event'] == 'message' && response_data['answer']
+        # Unicode エスケープシーケンスをデコード
+        answer = decode_unicode_escapes(response_data['answer'])
+        
+        # 空の回答をチェック
+        if answer.strip.empty?
+          raise 'AIから空のレスポンスが返されました。再試行してください。'
+        end
+        
+        return answer.strip
+      elsif response_data['event'] == 'error'
+        error_msg = response_data['message'] || 'AI APIからの不明なエラー'
+        raise "AI APIエラー: #{error_msg}"
+      else
+        # 予期しないレスポンス形式
+        Rails.logger.error "Unexpected API response format: #{response_data}"
+        raise 'AIから予期しないレスポンス形式が返されました。'
       end
 
     rescue Net::TimeoutError => e
+      Rails.logger.error "AI API Timeout: #{e.message}"
       raise 'AI APIの応答がタイムアウトしました。しばらく待ってから再試行してください。'
     rescue Net::HTTPError => e
+      Rails.logger.error "AI API HTTP Error: #{e.message}"
       raise 'AI APIとの通信でエラーが発生しました。ネットワーク接続を確認してください。'
+    rescue JSON::ParserError => e
+      Rails.logger.error "AI API JSON Parse Error: #{e.message}"
+      Rails.logger.error "Response body: #{response&.body}"
+      raise 'AI APIからの応答を解析できませんでした。'
     rescue StandardError => e
+      Rails.logger.error "AI API Standard Error: #{e.message}"
+      Rails.logger.error e.backtrace.join("\n")
       raise "AI APIでエラーが発生しました: #{e.message}"
     end
-
-    final_text = collected_text.strip
-    raise 'AIから空のレスポンスが返されました。再試行してください。' if final_text.empty? && message_count > 0
-    raise 'AIから有効なレスポンスが得られませんでした。APIの設定を確認してください。' if final_text.empty?
-    raise 'AIからの応答が短すぎます。再試行してください。' if final_text.length < 3
-
-    final_text
   end
 
+  # Unicode エスケープシーケンスのデコード（APIレスポンスに必要）
   def decode_unicode_escapes(text)
     return '' if text.nil?
 
@@ -227,27 +214,8 @@ class Manager::DailyReportsController < BaseController
       code_point = Regexp.last_match(1).hex
       [code_point].pack('U*')
     end
-  rescue
+  rescue => e
+    Rails.logger.warn "Unicode decode error: #{e.message}"
     text
-  end
-
-  def process_remaining_buffer(buffer, collected_text)
-    buffer.split(/\r?\n/).each do |line|
-      line = line.strip
-      next unless line.start_with?('data:')
-
-      data_part = line.sub(/^data:\s*/, '').strip
-      next if data_part.blank? || data_part == '[DONE]'
-
-      begin
-        data = JSON.parse(data_part)
-        if data['event'] == 'message' && data['answer'].present?
-          decoded_piece = decode_unicode_escapes(data['answer'])
-          collected_text << decoded_piece
-        end
-      rescue JSON::ParserError
-        next
-      end
-    end
   end
 end
