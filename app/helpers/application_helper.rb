@@ -29,7 +29,7 @@ module ApplicationHelper
       image_tag(user.avatar, options)
     else
       # デフォルト画像またはイニシャル画像を表示
-      image_tag("https://via.placeholder.com/32/1ab394/ffffff?text=#{user.name.first.upcase}", options)
+      image_tag("https://placehold.jp/a6a6a6/ffffff/200x200.png?text=#{user.name.first.upcase}", options)
     end
   end
 end
