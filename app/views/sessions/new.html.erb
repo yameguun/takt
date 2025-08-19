@@ -397,7 +397,7 @@
           Slackでログイン
         </a>
 
-        <% if Rails.env == "development" %>
+        <% if Rails.env == "development" || Rails.env == "production" %>
           <div class="divider">
             <span>または</span>
           </div>
