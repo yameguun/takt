@@ -118,14 +118,10 @@
                             <%= l(task_type.created_at, format: :short) %>
                           </td>
                           <td class="text-center">
-                            <%= link_to edit_admin_company_task_type_path(@company, task_type), 
-                                        class: 'btn btn-white btn-sm' do %>
+                            <%= link_to edit_admin_company_task_type_path(@company, task_type), class: 'btn btn-white btn-sm' do %>
                               <i class="fa fa-pencil"></i> 編集
                             <% end %>
-                            <%= link_to admin_company_task_type_path(@company, task_type), 
-                                        class: 'btn btn-danger btn-sm', 
-                                        method: :delete, 
-                                        data: { confirm: "「#{task_type.name}」を削除しますか？" } do %>
+                            <%= link_to admin_company_task_type_path(@company, task_type), class: 'btn btn-danger btn-sm', method: :delete, data: { confirm: '削除しますか？' } do %>
                               <i class="fa fa-trash"></i> 削除
                             <% end %>
                           </td>
