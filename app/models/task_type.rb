@@ -17,5 +17,6 @@
 #  fk_rails_...  (company_id => companies.id)
 #
 class TaskType < ApplicationRecord
+  belongs_to :company
   validates :name, presence: true, uniqueness: true
 end

@@ -11,6 +11,7 @@ namespace :csv do
     CSV.foreach(csv_file_path, headers: true) do |row|
       client = Client.find_or_create_by(company: suncac, name: row["顧客"])
       client.projects.create(name: row["案件名"], sales: row["売上"].to_i, description: row["社内メモ"])
+      TaskType.find_or_create_by(company: suncac, name: row["案件区分"])
     end
     
     puts "CSV import completed!"
