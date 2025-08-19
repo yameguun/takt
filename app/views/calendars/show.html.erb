@@ -320,7 +320,7 @@
         </button>
         <h4 class="modal-title" id="managerCommentsModalTitle">
           <i class="fa fa-comments text-info"></i> 
-          <span id="commentsModalDate"></span> の日報へのマネージャーコメント
+          <span id="commentsModalDate"></span> の日報へのコメント
         </h4>
       </div>
       <div class="modal-body">
@@ -1126,7 +1126,6 @@ document.addEventListener('DOMContentLoaded', function() {
             <div>
               <div class="comment-display-user-name">
                 ${escapeHtml(comment.user_name)}
-                ${managerBadge}
               </div>
               <div class="comment-display-date">${escapeHtml(comment.created_at)}</div>
             </div>
