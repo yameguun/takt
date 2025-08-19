@@ -7,6 +7,62 @@ ja:
         delimiter: ","
         separator: "."
         format: "%n%u" # 数値(n)と単位(u)の順番を指定
+  time:
+    formats:
+      default: "%Y年%m月%d日(%a) %H時%M分%S秒 %z"
+      long: "%Y/%m/%d %H:%M"
+      short: "%m/%d %H:%M"
+      date_only: "%Y/%m/%d"
+      time_only: "%H:%M"
+  date:
+    formats:
+      default: "%Y/%m/%d"
+      long: "%Y年%m月%d日(%a)"
+      short: "%m/%d"
+    abbr_day_names:
+      - 日
+      - 月
+      - 火
+      - 水
+      - 木
+      - 金
+      - 土
+    abbr_month_names:
+      - 
+      - 1月
+      - 2月
+      - 3月
+      - 4月
+      - 5月
+      - 6月
+      - 7月
+      - 8月
+      - 9月
+      - 10月
+      - 11月
+      - 12月
+    day_names:
+      - 日曜日
+      - 月曜日
+      - 火曜日
+      - 水曜日
+      - 木曜日
+      - 金曜日
+      - 土曜日
+    month_names:
+      - 
+      - 1月
+      - 2月
+      - 3月
+      - 4月
+      - 5月
+      - 6月
+      - 7月
+      - 8月
+      - 9月
+      - 10月
+      - 11月
+      - 12月
   datetime:
     distance_in_words:
       half_a_minute: "30秒"
@@ -51,8 +107,16 @@ ja:
         not_a_number: "は数値で入力してください"
         greater_than: "は%{count}より大きい値にしてください"
         less_than_or_equal_to: "は%{count}以下の値にしてください"
+        taken: "は既に使用されています"
+        invalid: "は不正な値です"
+        confirmation: "が一致しません"
+        too_short: "は%{count}文字以上で入力してください"
+        too_long: "は%{count}文字以内で入力してください"
     models:
       daily_report_project: "作業記録"
+      task_type: "作業区分"
+      company: "会社"
+      department: "部署"
     attributes:
       daily_report_project:
         minutes: "作業時間（分）"
@@ -60,4 +124,24 @@ ja:
         project_id: "プロジェクト"
         description: "作業内容"
       task_type:
-        name: "作業区分"
+        name: "作業区分名"
+      company:
+        name: "会社名"
+      department:
+        name: "部署名"
+  views:
+    pagination:
+      first: "&laquo; 最初"
+      last: "最後 &raquo;"
+      previous: "&lsaquo; 前"
+      next: "次 &rsaquo;"
+      truncate: "&hellip;"
+  helpers:
+    page_entries_info:
+      one_page:
+        display_entries:
+          zero: "%{entry_name}が見つかりませんでした"
+          one: "1件の%{entry_name}を表示"
+          other: "%{count}件の%{entry_name}を表示"
+      more_pages:
+        display_entries: "%{total}件中%{first}-%{last}件の%{entry_name}を表示"

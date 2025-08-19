@@ -63,7 +63,12 @@ Rails.application.routes.draw do
         resources :clients, except: [:show] do
           resources :projects, except: [:show]
         end
-        resources :task_types, except: [:show]
+        resources :task_types, except: [:show] do
+          collection do
+            post :import
+            get :download_template
+          end
+        end
       end
     end
   end
