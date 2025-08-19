@@ -12,6 +12,7 @@
 #  client_id             :bigint           not null
 #  daily_report_id       :bigint           not null
 #  project_id            :bigint           not null
+#  task_type_id          :bigint           not null
 #
 # Indexes
 #
@@ -20,7 +21,9 @@
 class DailyReportProject < ApplicationRecord
   belongs_to :daily_report, inverse_of: :daily_report_projects
   belongs_to :project, optional: false
-  
+  belongs_to :client, optional: false
+  belongs_to :task_type, optional: false
+
   validates :minutes, numericality: { 
     only_integer: true, 
     greater_than: 0, 

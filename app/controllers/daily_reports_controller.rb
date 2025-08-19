@@ -12,8 +12,11 @@ class DailyReportsController < BaseController
 
     # 日報と関連プロジェクトをN+1問題なく取得
     @daily_report = current_user.daily_reports
-                                .includes(daily_report_projects: { project: :client })
+                                .includes(daily_report_projects: [:task_type, { project: :client }])
                                 .find_or_create_by(date: @write_date)
+    
+    # 作業区分をロード
+    @task_types = current_user.company.task_types.order(:name)
   end
 
   def create
@@ -47,6 +50,7 @@ class DailyReportsController < BaseController
               daily_report_project.update!(
                 client_id: work_params[:client_id],
                 project_id: work_params[:project_id],
+                task_type_id: work_params[:task_type_id],
                 minutes: minutes, # hoursからminutesに変換した値を使用
                 description: work_params[:description]
               )
@@ -57,6 +61,7 @@ class DailyReportsController < BaseController
             daily_report_project = @daily_report.daily_report_projects.create!(
               client_id: work_params[:client_id],
               project_id: work_params[:project_id],
+              task_type_id: work_params[:task_type_id],
               minutes: minutes, # hoursからminutesに変換した値を使用
               description: work_params[:description]
             )
@@ -142,6 +147,7 @@ class DailyReportsController < BaseController
         :id,
         :client_id,
         :project_id,
+        :task_type_id,
         :hours,
         :description,
         :_destroy
