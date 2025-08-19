@@ -36,7 +36,7 @@
             <div class="ibox">
               <div class="ibox-content text-center p-md">
                 <div class="row">
-                  <div class="col-md-4 col-md-offset-4">
+                  <div class="col-md-4">
                     <div class="form-group">
                       <label class="font-bold text-muted">
                         <i class="fa fa-calendar"></i> 日報作成日
@@ -47,6 +47,40 @@
                              id="reportDate" 
                              required 
                              value="<%= @write_date %>">
+                    </div>
+                  </div>
+                  <div class="col-md-4">
+                    <div class="form-group">
+                      <label class="font-bold text-muted">
+                        <i class="fa fa-copy"></i> 作業コピー
+                      </label>
+                      <% if @yesterday_report&.daily_report_projects&.any? %>
+                        <button type="button" 
+                                class="btn btn-info btn-lg btn-block" 
+                                id="copyYesterdayBtn"
+                                data-report-date="<%= @write_date %>">
+                          <i class="fa fa-copy"></i> 昨日の作業をコピー
+                          <small class="block">(<%= (@write_date - 1.day).strftime('%m/%d') %>の作業 <%= @yesterday_report.daily_report_projects.count %>件)</small>
+                        </button>
+                      <% else %>
+                        <button type="button" class="btn btn-default btn-lg btn-block" disabled>
+                          <i class="fa fa-copy"></i> 昨日の作業なし
+                          <small class="block">コピーできる作業がありません</small>
+                        </button>
+                      <% end %>
+                    </div>
+                  </div>
+                  <div class="col-md-4">
+                    <div class="form-group">
+                      <label class="font-bold text-muted">
+                        <i class="fa fa-info-circle"></i> 使い方
+                      </label>
+                      <div class="alert alert-info m-b-none">
+                        <small>
+                          <i class="fa fa-lightbulb-o"></i> 
+                          昨日と同じ作業をする場合は「コピー」ボタンで時間を節約できます
+                        </small>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -331,6 +365,7 @@
   </div>
 </div>
 
+<!-- 既存のスタイルは変更なし -->
 <style>
 /* 既存のカスタムスタイル */
 .work-item-card {
@@ -750,6 +785,16 @@
 .suggestions-dropdown::-webkit-scrollbar-thumb:hover {
   background: #a8a8a8;
 }
+
+/* コピー成功時のスタイル */
+.copy-success-message {
+  background: #d4edda;
+  border: 1px solid #c3e6cb;
+  color: #155724;
+  padding: 15px;
+  border-radius: 4px;
+  text-align: center;
+}
 </style>
 
 <script>
@@ -769,6 +814,240 @@ $(document).ready(function() {
             window.location.href = `${currentPath}?report_date=${selectedDate}`;
         }
     });
+
+    // **昨日の作業をコピーする機能（新規追加）**
+    $('#copyYesterdayBtn').on('click', async function() {
+        const btn = $(this);
+        const originalHtml = btn.html();
+        const reportDate = btn.data('report-date');
+        
+        // 確認ダイアログ
+        if (!confirm('昨日の作業をコピーしますか？\n（現在の作業内容は上書きされます）')) {
+            return;
+        }
+        
+        // ボタンを無効化してローディング状態に
+        btn.prop('disabled', true).html('<i class="fa fa-spinner fa-spin"></i> コピー中...');
+        
+        try {
+            const response = await fetch(`/reports/previous_day_report?report_date=${reportDate}`);
+            
+            if (response.ok) {
+                const data = await response.json();
+                
+                if (data.status === 'success') {
+                    // 既存の作業項目をクリア
+                    $('#workList').empty();
+                    workIndex = 0;
+                    
+                    // 日報内容をコピー
+                    if (data.report_content) {
+                        $('textarea[name="report_content"]').val(data.report_content);
+                    }
+                    
+                    // 作業項目をコピー
+                    data.works.forEach((work, index) => {
+                        const workItem = createWorkItemFromCopy(index, work);
+                        $('#workList').append(workItem);
+                        
+                        // 案件のサジェストデータを読み込み
+                        const workElement = $(`[data-work-index="${index}"]`);
+                        if (work.client_id) {
+                            loadProjectSuggestions(workElement, work.client_id);
+                        }
+                        
+                        workIndex++;
+                    });
+                    
+                    // 作業項目がない場合は空の項目を1つ追加
+                    if (data.works.length === 0) {
+                        const workItem = createWorkItem(0);
+                        $('#workList').append(workItem);
+                        workIndex = 1;
+                    }
+                    
+                    // UI更新
+                    updateWorkNumbers();
+                    updateRemoveButtons();
+                    calculateTotalHours();
+                    
+                    // 成功メッセージとボタン状態の変更
+                    showNotification('success', '昨日の作業をコピーしました');
+                    
+                    // ボタンを成功状態に変更
+                    btn.closest('.form-group').html(`
+                        <label class="font-bold text-muted">
+                            <i class="fa fa-check"></i> コピー完了
+                        </label>
+                        <div class="copy-success-message">
+                            <i class="fa fa-check-circle"></i> 昨日の作業をコピーしました<br>
+                            <small>時間を入力して日報を完成させてください</small>
+                        </div>
+                    `);
+                    
+                } else {
+                    showNotification('info', data.message || '昨日の作業記録が見つかりませんでした');
+                    btn.prop('disabled', false).html(originalHtml);
+                }
+                
+            } else if (response.status === 404) {
+                showNotification('info', '昨日の作業記録が見つかりませんでした');
+                btn.prop('disabled', false).html(originalHtml);
+            } else {
+                throw new Error('データの取得に失敗しました');
+            }
+            
+        } catch (error) {
+            console.error('コピーエラー:', error);
+            showNotification('error', error.message || 'コピー中にエラーが発生しました');
+            btn.prop('disabled', false).html(originalHtml);
+        }
+    });
+
+    // コピー用の作業項目作成関数
+    function createWorkItemFromCopy(index, data) {
+        return `
+            <div class="work-item-card animated fadeIn" data-work-index="${index}" data-work-id="">
+                <div class="panel panel-default">
+                    <div class="panel-heading bg-muted">
+                        <div class="row">
+                            <div class="col-xs-4">
+                                <h5 class="m-t-xs">
+                                    <i class="fa fa-briefcase text-info"></i> 
+                                    作業 #<span class="work-number">${index + 1}</span>
+                                </h5>
+                            </div>
+                            <div class="col-xs-8 text-right">
+                                <button type="button" class="btn btn-default btn-xs" disabled>
+                                    <i class="fa fa-moon-o"></i> 保存後に申請可能
+                                </button>
+                                <button type="button" class="btn btn-danger btn-xs remove-work-btn m-l-xs">
+                                    <i class="fa fa-times"></i> 削除
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="panel-body">
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label class="control-label font-bold">
+                                        <i class="fa fa-building-o text-info"></i> 顧客名
+                                        <span class="text-danger">*</span>
+                                    </label>
+                                    <div class="input-group">
+                                        <span class="input-group-addon bg-white">
+                                            <i class="fa fa-search"></i>
+                                        </span>
+                                        <input type="text" 
+                                               class="form-control client-input" 
+                                               name="works[${index}][customer]" 
+                                               placeholder="顧客名を検索・入力" 
+                                               required 
+                                               autocomplete="off" 
+                                               value="${data.client_name || ''}">
+                                        <input type="hidden" 
+                                               class="client-id" 
+                                               name="works[${index}][client_id]" 
+                                               value="${data.client_id || ''}">
+                                    </div>
+                                    <div class="suggestions-dropdown client-suggestions" role="listbox" aria-label="顧客候補"></div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label class="control-label font-bold">
+                                        <i class="fa fa-folder-open-o text-success"></i> 案件名
+                                        <span class="text-danger">*</span>
+                                    </label>
+                                    <div class="input-group">
+                                        <span class="input-group-addon bg-white">
+                                            <i class="fa fa-search"></i>
+                                        </span>
+                                        <input type="text" 
+                                               class="form-control project-input" 
+                                               name="works[${index}][project]" 
+                                               placeholder="案件名を検索・入力" 
+                                               required 
+                                               autocomplete="off" 
+                                               ${data.client_id ? '' : 'disabled'} 
+                                               value="${data.project_name || ''}">
+                                        <input type="hidden" 
+                                               class="project-id" 
+                                               name="works[${index}][project_id]" 
+                                               value="${data.project_id || ''}">
+                                    </div>
+                                    <div class="suggestions-dropdown project-suggestions" role="listbox" aria-label="案件候補"></div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label class="control-label font-bold">
+                                        <i class="fa fa-tags text-primary"></i> 作業区分
+                                        <span class="text-danger">*</span>
+                                    </label>
+                                    <div class="input-group">
+                                        <span class="input-group-addon bg-white">
+                                            <i class="fa fa-search"></i>
+                                        </span>
+                                        <input type="text" 
+                                               class="form-control task-type-input" 
+                                               name="works[${index}][task_type]" 
+                                               placeholder="作業区分を検索・入力" 
+                                               required 
+                                               autocomplete="off" 
+                                               value="${data.task_type_name || ''}">
+                                        <input type="hidden" 
+                                               class="task-type-id" 
+                                               name="works[${index}][task_type_id]" 
+                                               value="${data.task_type_id || ''}">
+                                    </div>
+                                    <div class="suggestions-dropdown task-type-suggestions" role="listbox" aria-label="作業区分候補"></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-3">
+                                <div class="form-group">
+                                    <label class="control-label font-bold">
+                                        <i class="fa fa-clock-o text-warning"></i> 作業時間
+                                        <span class="text-danger">*</span>
+                                    </label>
+                                    <div class="input-group">
+                                        <input type="number" 
+                                               class="form-control text-center work-hours-input" 
+                                               name="works[${index}][minutes]" 
+                                               placeholder="0" 
+                                               step="15" 
+                                               min="0" 
+                                               max="1440" 
+                                               required 
+                                               value="${data.minutes || ''}">
+                                        <span class="input-group-addon bg-primary text-white">分</span>
+                                    </div>
+                                    <small class="text-muted">
+                                        <span class="hours-display">${((data.minutes || 0) / 60).toFixed(1)}</span> 時間
+                                    </small>
+                                </div>
+                            </div>
+                            <div class="col-md-9">
+                                <div class="form-group">
+                                    <label class="control-label font-bold">
+                                        <i class="fa fa-pencil text-muted"></i> 作業内容
+                                        <small class="text-muted">（任意）</small>
+                                    </label>
+                                    <textarea class="form-control" 
+                                              name="works[${index}][description]" 
+                                              rows="3" 
+                                              placeholder="実施した作業の詳細を記入">${data.description || ''}</textarea>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
 
     // 残業申請ボタンの処理（作業単位）
     $(document).on('click', '.overtime-btn', async function() {

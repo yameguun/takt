@@ -11,6 +11,9 @@ Rails.application.routes.draw do
 
   # 日報を書く（コメント表示機能を追加）
   resources :daily_reports, only: [:index, :create], path: "/reports" do
+    collection do
+      get :previous_day_report
+    end
     member do
       get :comments
     end

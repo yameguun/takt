@@ -17,6 +17,12 @@ class DailyReportsController < BaseController
     
     # 作業区分をロード
     @task_types = current_user.company.task_types.order(:name)
+
+    # 昨日の日報の存在チェック（UI表示用）
+    yesterday = @write_date - 1.day
+    @yesterday_report = current_user.daily_reports
+                                   .includes(:daily_report_projects)
+                                   .find_by(date: yesterday)
   end
 
   def create
@@ -109,6 +115,49 @@ class DailyReportsController < BaseController
         }
       end
     end
+  end
+
+  # 追加: 昨日の日報データを取得するAPI
+  def previous_day_report
+    target_date = begin
+      Date.iso8601(params[:report_date])
+    rescue
+      Time.zone.today
+    end
+    yesterday = target_date - 1.day
+
+    previous_report = current_user.daily_reports
+                                  .includes(daily_report_projects: [:task_type, { project: :client }])
+                                  .find_by(date: yesterday)
+
+    if previous_report&.daily_report_projects&.any?
+      render json: {
+        status: 'success',
+        report_content: previous_report.content,
+        works: previous_report.daily_report_projects.map do |work|
+          {
+            client_id: work.client_id,
+            client_name: work.client&.name,
+            project_id: work.project_id,
+            project_name: work.project&.name,
+            task_type_id: work.task_type_id,
+            task_type_name: work.task_type&.name,
+            minutes: 0, # 時間は0にリセット
+            description: work.description
+          }
+        end
+      }
+    else
+      render json: { 
+        status: 'not_found', 
+        message: '昨日の作業記録が見つかりませんでした' 
+      }, status: :not_found
+    end
+  rescue => e
+    render json: { 
+      status: 'error', 
+      message: "データの取得中にエラーが発生しました: #{e.message}" 
+    }, status: :internal_server_error
   end
 
   private
