@@ -27,6 +27,9 @@ Rails.application.routes.draw do
       end
     end
     resources :daily_reports, only: [:index] do
+      member do
+        post :generate_ai_comment
+      end
       resources :comments, only: [:create, :destroy]
     end
   end
