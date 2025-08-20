@@ -26,6 +26,8 @@ module Myapp
 
     config.i18n.default_locale = :ja
 
+    config.active_job.queue_adapter = :solid_queue
+
     config.generators do |g|
       g.test_framework nil
       g.helper         nil
