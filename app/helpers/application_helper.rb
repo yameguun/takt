@@ -9,9 +9,9 @@ module ApplicationHelper
 
   # 動的タイトル取得
   def get_title(title_name)
-    title = "Takt"
+    title = "TSUBASA"
     if title_name.present?
-      title = title_name + " | Takt"
+      title = title_name + " | TSUBASA"
     end
     return title
   end
