@@ -24,14 +24,28 @@ services:
   web:
     build: .
     platform: linux/x86_64
-    # ★削除: このコマンドはentrypoint.shに移動するため不要
-    # command: bash -c "rm -f tmp/pids/server.pid && bundle exec rails s -p 3000 -b '0.0.0.0'"
+    command: bash -c "rm -f tmp/pids/server.pid && bundle exec rails s -p 3000 -b '0.0.0.0'"
     volumes:
       - .:/myapp
     ports:
       - "3000:3000"
     depends_on:
       # ★変更: dbコンテナのhealthcheckが成功するまで待つ
+      db:
+        condition: service_healthy
+    environment:
+      RAILS_ENV: development
+      DB_HOST: db
+      DB_USERNAME: user
+      DB_PASSWORD: password
+      RAILS_LOG_TO_STDOUT: "true"
+  worker:
+    build: .
+    platform: linux/x86_64
+    command: bin/rails solid_queue:start
+    volumes:
+      - .:/myapp
+    depends_on:
       db:
         condition: service_healthy
     environment:
