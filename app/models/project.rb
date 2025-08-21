@@ -2,13 +2,14 @@
 #
 # Table name: projects
 #
-#  id          :bigint           not null, primary key
-#  description :text(65535)
-#  name        :string(255)      not null
-#  sales       :integer          default(0), not null
-#  created_at  :datetime         not null
-#  updated_at  :datetime         not null
-#  client_id   :bigint           not null
+#  id              :bigint           not null, primary key
+#  description     :text(65535)
+#  name            :string(255)      not null
+#  sales           :integer          default(0), not null
+#  created_at      :datetime         not null
+#  updated_at      :datetime         not null
+#  client_id       :bigint           not null
+#  project_type_id :bigint
 #
 # Indexes
 #

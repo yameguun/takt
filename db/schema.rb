@@ -144,6 +144,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_08_21_042719) do
 
   create_table "projects", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
     t.bigint "client_id", null: false
+    t.bigint "project_type_id"
     t.string "name", null: false
     t.text "description"
     t.integer "sales", default: 0, null: false

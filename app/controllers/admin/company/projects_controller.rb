@@ -53,6 +53,6 @@ class Admin::Company::ProjectsController < Admin::ApplicationController
   end
 
   def project_params
-    params.require(:project).permit(:name, :description, :sales)
+    params.require(:project).permit(:name, :description, :sales, :project_type_id)
   end
 end
