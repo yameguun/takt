@@ -329,6 +329,35 @@
                 </h5>
               </div>
               <div class="ibox-content">
+                <!-- ガイダンスメッセージ -->
+                <div class="alert alert-info m-b-sm">
+                  <i class="fa fa-info-circle"></i>
+                  今日も一日お疲れ様です。今日もあなたの姿勢
+                  <strong>（さらけ出し、自責、アンラーン、Growthmindset、習慣化）</strong>について
+                  振り返ってみましょう。緑のフレームのボタンを押して、振り返りをしてみましょう。
+                </div>
+
+                <!-- テンプレート選択ボタン群 -->
+                <div class="form-group m-b-sm">
+                  <label class="control-label font-bold m-b-xs">
+                    <i class="fa fa-th-list"></i> フレーミングを追加
+                  </label>
+                  <div class="template-buttons-group">
+                    <button type="button" class="btn btn-sm btn-primary m-r-xs m-b-xs template-btn" data-template-type="good_bad_next">
+                      GOOD/BAD/NEXT
+                    </button>
+                    <button type="button" class="btn btn-sm btn-primary m-r-xs m-b-xs template-btn" data-template-type="content_emotion_attitude">
+                      内容/感情/姿勢
+                    </button>
+                    <button type="button" class="btn btn-sm btn-primary m-r-xs m-b-xs template-btn" data-template-type="fact_emotion_discovery_declaration">
+                      事実/感情/気づき/宣言
+                    </button>
+                    <button type="button" class="btn btn-sm btn-primary m-r-xs m-b-xs template-btn" data-template-type="keep_problem_next">
+                      KEEP/PROBLEM/NEXT
+                    </button>
+                  </div>
+                </div>
+
                 <div class="form-group">
                   <label class="control-label font-bold">
                     <i class="fa fa-edit"></i> 本日の報告
@@ -336,12 +365,13 @@
                   </label>
                   <textarea class="form-control" 
                             name="report_content" 
+                            id="reportContent"
                             rows="10" 
-                            placeholder="【本日の業務内容】&#10;&#10;【成果・完了事項】&#10;&#10;【課題・懸念事項】&#10;&#10;【明日の予定】&#10;" 
+                            placeholder="こちらに入力してください..." 
                             required><%= @daily_report.content %></textarea>
                   <p class="help-block m-t-xs">
                     <i class="fa fa-info-circle"></i> 
-                    業務内容、成果、課題、明日の予定を具体的に記載してください
+                    業務内容、成果、課題、明日の予定を具体的に記載してください。テンプレートボタンで構造化された記入欄を追加できます。
                   </p>
                 </div>
               </div>
@@ -365,7 +395,6 @@
   </div>
 </div>
 
-<!-- 既存のスタイルは変更なし -->
 <style>
 /* 既存のカスタムスタイル */
 .work-item-card {
@@ -393,6 +422,47 @@
   padding: 20px;
 }
 
+/* テンプレートボタンのスタイル */
+.template-buttons-group {
+  margin-bottom: 15px;
+}
+
+.template-btn {
+  transition: all 0.3s ease;
+  border-radius: 20px;
+  font-weight: 600;
+}
+
+.template-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
+.template-btn:active {
+  transform: translateY(0);
+}
+
+/* レスポンシブ対応 */
+@media (max-width: 768px) {
+  .template-btn {
+    width: 48%;
+    margin-right: 2%;
+    margin-bottom: 8px;
+  }
+  
+  .template-btn:nth-child(even) {
+    margin-right: 0;
+  }
+}
+
+@media (max-width: 480px) {
+  .template-btn {
+    width: 100%;
+    margin-right: 0;
+    margin-bottom: 8px;
+  }
+}
+
 /* ===== 改善されたサジェストドロップダウン ===== */
 .suggestions-dropdown {
   position: absolute;
@@ -404,13 +474,12 @@
   overflow-y: auto;
   width: calc(100% - 34px);
   left: 34px;
-  z-index: 9999; /* 最前面に表示 */
+  z-index: 9999;
   display: none;
   box-shadow: 0 4px 12px rgba(0,0,0,0.15);
   backdrop-filter: blur(2px);
 }
 
-/* 上方向表示 */
 .suggestions-dropdown.show-above {
   top: auto;
   bottom: 100%;
@@ -420,14 +489,12 @@
   box-shadow: 0 -4px 12px rgba(0,0,0,0.15);
 }
 
-/* 右寄せ表示 */
 .suggestions-dropdown.align-right {
   left: auto;
   right: 0;
   width: calc(100% - 34px);
 }
 
-/* モバイル最適化 */
 @media (max-width: 768px) {
   .suggestions-dropdown {
     max-height: 200px;
@@ -458,7 +525,7 @@
   transition: all 0.2s;
   font-size: 14px;
   position: relative;
-  min-height: 44px; /* タッチターゲット最小サイズ */
+  min-height: 44px;
   display: flex;
   align-items: center;
 }
@@ -474,17 +541,11 @@
   border-bottom: none;
 }
 
-/* キーボードナビゲーション用フォーカス */
 .suggestion-item:focus {
   outline: 2px solid #1ab394;
   outline-offset: -2px;
   background-color: #1ab394;
   color: white;
-}
-
-/* ローディング状態 */
-.loading {
-  position: relative;
 }
 
 .loading:after {
@@ -517,7 +578,6 @@
   color: #1ab394;
 }
 
-/* 残業申請ボタンスタイル */
 .overtime-btn {
   min-width: 90px;
 }
@@ -527,7 +587,6 @@
   box-shadow: 0 2px 4px rgba(0,0,0,0.2);
 }
 
-/* アラートスタイル */
 .alert-warning {
   background-color: #fcf8e3;
   border-color: #faebcc;
@@ -549,7 +608,7 @@
   box-shadow: 0 2px 4px rgba(0,0,0,0.08);
   transition: all 0.3s ease;
   position: relative;
-  z-index: 1; /* サジェストドロップダウンより低く */
+  z-index: 1;
 }
 
 .total-hours-summary h2,
@@ -558,7 +617,6 @@
   color: inherit !important;
 }
 
-/* ステータス別の色設定 */
 .total-hours-summary.status-normal {
   border-left-color: #1ab394;
 }
@@ -597,7 +655,6 @@
   background-color: #ed5565;
 }
 
-/* ステータスバッジ */
 .status-badge {
   display: inline-block;
   margin-left: 8px;
@@ -619,7 +676,6 @@
   color: #c92a3a;
 }
 
-/* プログレスバー */
 .progress-mini {
   height: 3px;
   margin-bottom: 0;
@@ -696,7 +752,6 @@
   }
 }
 
-/* アニメーション */
 .animated {
   animation-duration: 0.5s;
   animation-fill-mode: both;
@@ -720,7 +775,6 @@
   animation-name: fadeInRight;
 }
 
-/* フォーカス状態の改善 */
 .form-control:focus {
   border-color: #1ab394;
   box-shadow: 0 0 0 0.2rem rgba(26, 179, 148, 0.25);
@@ -730,7 +784,6 @@
   box-shadow: 0 0 0 0.2rem rgba(26, 179, 148, 0.5);
 }
 
-/* 入力グループのスタイル改善 */
 .input-group-addon {
   background-color: #f8f8f9;
   border-color: #e7eaec;
@@ -757,7 +810,6 @@
   margin-bottom: 0;
 }
 
-/* 削除済みマーカー */
 .work-item-card.marked-for-deletion {
   opacity: 0.5;
   pointer-events: none;
@@ -767,7 +819,6 @@
   background-color: #f8f8f9;
 }
 
-/* スクロールバーカスタマイズ */
 .suggestions-dropdown::-webkit-scrollbar {
   width: 6px;
 }
@@ -786,7 +837,6 @@
   background: #a8a8a8;
 }
 
-/* コピー成功時のスタイル */
 .copy-success-message {
   background: #d4edda;
   border: 1px solid #c3e6cb;
@@ -805,6 +855,63 @@ $(document).ready(function() {
     // キーボードナビゲーション用変数
     let currentDropdown = null;
     let currentSelectedIndex = -1;
+
+    // 日報テンプレート定義（提供された仕様通り）
+    const templates = {
+        good_bad_next: `[GOOD]:
+
+[BAD]:
+
+[NEXT]:`,
+        content_emotion_attitude: `[内容]:
+
+[感情]:
+
+[姿勢]:`,
+        fact_emotion_discovery_declaration: `[事実]:
+
+[感情]:
+
+[気づき]:
+
+[宣言]:`,
+        keep_problem_next: `[KEEP]:
+
+[PROBLEM]:
+
+[NEXT]:`
+    };
+
+    // テンプレートボタンのクリックイベント
+    $(document).on('click', '.template-btn', function() {
+        const templateType = $(this).data('template-type');
+        const templateText = templates[templateType];
+        const $reportContent = $('#reportContent');
+        let currentContent = $reportContent.val();
+
+        if (templateText) {
+            // 既存の内容がある場合、区切り線を追加してから追記
+            if (currentContent.trim() !== '') {
+                currentContent += '\n\n------------\n\n';
+            }
+            $reportContent.val(currentContent + templateText);
+            
+            // テキストエリアのスクロール位置を最下部に移動
+            $reportContent.scrollTop($reportContent[0].scrollHeight);
+            
+            // フォーカスを設定
+            $reportContent.focus();
+            
+            // 視覚的フィードバック
+            $(this).addClass('btn-success').removeClass('btn-primary');
+            setTimeout(() => {
+                $(this).removeClass('btn-success').addClass('btn-primary');
+            }, 500);
+            
+            // 通知表示
+            showNotification('success', 'テンプレートを追加しました');
+        }
+    });
 
     // 日付変更時の処理
     $('#reportDate').on('change', function() {
