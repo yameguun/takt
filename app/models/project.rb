@@ -21,7 +21,7 @@
 #
 class Project < ApplicationRecord
   belongs_to :client
-  belongs_to :project_type, optional: false
+  belongs_to :project_type, optional: true
 
   validates :name, presence: true
   validates :sales, presence: true, numericality: true
