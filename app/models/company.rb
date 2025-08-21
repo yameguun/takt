@@ -13,6 +13,7 @@ class Company < ApplicationRecord
   has_many :departments, dependent: :destroy
   has_many :clients, dependent: :destroy
   has_many :task_types, dependent: :destroy
+  has_many :project_types, dependent: :destroy
 
   validates :name, presence: true
 end

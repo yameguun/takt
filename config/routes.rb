@@ -72,6 +72,12 @@ Rails.application.routes.draw do
             get :download_template
           end
         end
+        resources :project_types, except: [:show] do
+          collection do
+            post :import
+            get :download_template
+          end
+        end
       end
     end
   end

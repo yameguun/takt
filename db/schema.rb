@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_08_19_024728) do
+ActiveRecord::Schema[8.0].define(version: 2025_08_21_042719) do
   create_table "action_mailbox_inbound_emails", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
     t.integer "status", default: 0, null: false
     t.string "message_id", null: false
@@ -134,6 +134,14 @@ ActiveRecord::Schema[8.0].define(version: 2025_08_19_024728) do
     t.index ["company_id"], name: "index_departments_on_company_id"
   end
 
+  create_table "project_types", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
+    t.bigint "company_id", null: false
+    t.string "name", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["company_id"], name: "index_project_types_on_company_id"
+  end
+
   create_table "projects", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
     t.bigint "client_id", null: false
     t.string "name", null: false
@@ -176,6 +184,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_08_19_024728) do
   add_foreign_key "comments", "users"
   add_foreign_key "daily_reports", "users"
   add_foreign_key "departments", "companies"
+  add_foreign_key "project_types", "companies"
   add_foreign_key "projects", "clients"
   add_foreign_key "task_types", "companies"
   add_foreign_key "users", "companies"

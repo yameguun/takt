@@ -1,7 +1,7 @@
-<%= form_for @task_type, url: @task_type.new_record?? admin_company_task_types_path(@company) : admin_company_task_type_path(@company, @task_type) , html: {class: 'form-horizontal'} do |f| %>
+<%= form_for @project_type, url: @project_type.new_record?? admin_company_project_types_path(@company) : admin_company_project_type_path(@company, @project_type) , html: {class: 'form-horizontal'} do |f| %>
 
   <div class="form-group">
-    <label class="col-sm-2 control-label">作業区分</label>
+    <label class="col-sm-2 control-label">案件区分</label>
     <div class="col-sm-10">
       <%= f.text_field :name, class: 'form-control', placeholder: 'D10_資料作成' %>
       <% if f.object.errors.include?(:name) %>
@@ -13,7 +13,7 @@
   <div class="hr-line-dashed"></div>
   <div class="form-group">
     <div class="col-sm-4 col-sm-offset-2">
-      <button class="btn btn-primary" type="submit"><%= @task_type.new_record?? "登録する" : "更新する"%></button>
+      <button class="btn btn-primary" type="submit"><%= @project_type.new_record?? "登録する" : "更新する"%></button>
     </div>
   </div>
 <% end %>
