@@ -105,6 +105,8 @@ GEM
     debug (1.11.0)
       irb (~> 1.10)
       reline (>= 0.3.8)
+    discard (1.4.0)
+      activerecord (>= 4.2, < 9.0)
     dotenv (3.1.8)
     dotenv-rails (3.1.8)
       dotenv (= 3.1.8)
@@ -353,6 +355,7 @@ DEPENDENCIES
   capybara
   csv
   debug
+  discard
   dotenv-rails
   image_processing (~> 1.2)
   importmap-rails

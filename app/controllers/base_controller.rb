@@ -16,6 +16,13 @@ class BaseController < ApplicationController
   def require_login
     unless logged_in?
       redirect_to login_path, alert: "ログインしてください"
+      return
+    end
+
+    if current_user.discarded?
+      log_out
+      redirect_to login_path, alert: "あなたのアカウントは無効化されました。再度ログインすることはできません。"
+      return
     end
   end
 end

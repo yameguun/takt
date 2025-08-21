@@ -8,10 +8,12 @@ class CreateUsers < ActiveRecord::Migration[8.0]
       t.string :name
       t.integer :unit_price, null: false, default: 0
       t.integer :permission, null: false, default: 0
+      t.datetime :discarded_at
 
       t.timestamps
     end
 
     add_index :users, :email, unique: true
+    add_index :users, :discarded_at
   end
 end

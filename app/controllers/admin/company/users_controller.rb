@@ -1,10 +1,10 @@
 # app/controllers/admin/company/users_controller.rb
 class Admin::Company::UsersController < Admin::ApplicationController
   before_action :set_company
-  before_action :set_user, only: %i[edit update remove_avatar]
+  before_action :set_user, only: %i[edit update remove_avatar destroy]
 
   def index
-    @users = @company.users.order(created_at: :desc).page(params[:page])
+    @users = @company.users.kept.order(created_at: :desc).page(params[:page])
   end
 
   def edit
@@ -17,6 +17,11 @@ class Admin::Company::UsersController < Admin::ApplicationController
       flash.now[:alert] = '入力内容に誤りがあります。'
       render :edit, status: :unprocessable_entity
     end
+  end
+
+  def destroy
+    @user.discard!
+    redirect_to admin_company_users_path(@company), flash: {error: "削除しました"}, status: :see_other
   end
 
   # 画像削除アクション
@@ -37,6 +42,6 @@ class Admin::Company::UsersController < Admin::ApplicationController
   end
 
   def set_user
-    @user = @company.users.find(params[:id])
+    @user = @company.users.kept.find(params[:id])
   end
 end

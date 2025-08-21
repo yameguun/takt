@@ -8,7 +8,7 @@ class Manager::DailyReportsController < BaseController
   before_action :set_daily_report, only: [:generate_ai_comment]
 
   def index
-    @users = current_user.company.users
+    @users = current_user.company.users.kept
       .includes(:department)
       .where(permission: 0)
       .order(:name)

@@ -3,6 +3,7 @@
 # Table name: users
 #
 #  id              :bigint           not null, primary key
+#  discarded_at    :datetime
 #  email           :string(255)      not null
 #  name            :string(255)
 #  password_digest :string(255)
@@ -15,8 +16,9 @@
 #
 # Indexes
 #
-#  index_users_on_company_id  (company_id)
-#  index_users_on_email       (email) UNIQUE
+#  index_users_on_company_id    (company_id)
+#  index_users_on_discarded_at  (discarded_at)
+#  index_users_on_email         (email) UNIQUE
 #
 # Foreign Keys
 #
@@ -24,6 +26,8 @@
 #
 
 class User < ApplicationRecord
+  include Discard::Model
+
   has_secure_password
 
   has_one_attached :avatar
@@ -32,9 +36,10 @@ class User < ApplicationRecord
   belongs_to :department, optional: true
 
   has_one :authentication, dependent: :destroy
-  
   has_many :daily_reports, dependent: :destroy
   has_many :comments, dependent: :destroy
+
+  self.discard_column = :discarded_at
 
   # 権限レベルの定義
   PERMISSION_LEVELS = {

@@ -44,7 +44,7 @@ GROUP BY users.id, departments.name
 ORDER BY total_hours DESC
 ) AS users
 EOS
-    @users = User.from(sql)
+    @users = User.kept.from(sql)
   end
   
   private

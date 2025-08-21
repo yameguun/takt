@@ -160,9 +160,11 @@ ActiveRecord::Schema[8.0].define(version: 2025_08_19_024728) do
     t.string "name"
     t.integer "unit_price", default: 0, null: false
     t.integer "permission", default: 0, null: false
+    t.datetime "discarded_at"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.index ["company_id"], name: "index_users_on_company_id"
+    t.index ["discarded_at"], name: "index_users_on_discarded_at"
     t.index ["email"], name: "index_users_on_email", unique: true
   end
 
