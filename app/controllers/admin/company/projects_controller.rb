@@ -2,9 +2,10 @@ class Admin::Company::ProjectsController < Admin::ApplicationController
   before_action :set_company
   before_action :set_client
   before_action :set_project, only: %i[edit update destroy]
+  before_action :set_project_types, only: %i[new create edit update]
 
   def index
-    @projects = @client.projects.order(created_at: :desc).page(params[:page])
+    @projects = @client.projects.includes(:project_type).order(created_at: :desc).page(params[:page])
   end
 
   def new
@@ -50,6 +51,10 @@ class Admin::Company::ProjectsController < Admin::ApplicationController
 
   def set_project
     @project = @client.projects.find(params[:id])
+  end
+
+  def set_project_types
+    @project_types = @company.project_types.order(:name)
   end
 
   def project_params

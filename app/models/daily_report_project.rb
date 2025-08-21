@@ -23,7 +23,6 @@ class DailyReportProject < ApplicationRecord
   belongs_to :project, optional: false
   belongs_to :client, optional: false
   belongs_to :task_type, optional: false
-  belongs_to :project_type, optional: false
 
   validates :minutes, numericality: { 
     only_integer: true, 
