@@ -8,6 +8,7 @@
 ssh debian@116.80.47.35
 rake assets:precompile assets:clean
 sudo systemctl restart puma.service
+sudo systemctl restart solid_queue.service
 ```
 
 ```bash
