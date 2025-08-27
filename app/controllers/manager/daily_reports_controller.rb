@@ -8,7 +8,7 @@ class Manager::DailyReportsController < BaseController
   before_action :set_daily_report, only: [:generate_ai_comment]
 
   def index
-    @users = current_user.company.users.kept
+    @users = current_company.users.kept
       .includes(:department)
       .where(permission: 0)
       .order(:name)
@@ -23,7 +23,7 @@ class Manager::DailyReportsController < BaseController
   end
 
   def generate_ai_comment
-    unless @daily_report.user.company_id == current_user.company_id
+    unless @daily_report.user.company_id == current_company.id
       render json: { status: 'error', message: '権限がありません' }, status: :forbidden
       return
     end

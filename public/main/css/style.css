@@ -7085,3 +7085,15 @@ label.control-label[data-tooltip].tooltip-active::after {
         transition: none;
     }
 }
+
+/* app/assets/stylesheets/application.scss に追加 */
+.navbar-form-custom select.form-control {
+  background-color: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: #000;
+  
+  option {
+    color: #333;
+    background-color: #000;
+  }
+}

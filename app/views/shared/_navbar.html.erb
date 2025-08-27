@@ -4,8 +4,40 @@
       <a class="navbar-minimalize minimalize-styl-2 btn btn-primary " href="#">
         <i class="fa fa-bars"></i>
       </a>
+      
+      <!-- 会社切り替えセレクトボックス -->
+      <% if can_switch_company? && accessible_companies.count > 1 %>
+        <%= form_with url: switch_company_path, method: :patch, local: true, 
+            html: { class: 'navbar-form-custom' } do |form| %>
+          <div class="form-group">
+            <%= form.select :company_id,
+                options_from_collection_for_select(
+                  accessible_companies, 
+                  :id, 
+                  :name, 
+                  current_company&.id
+                ),
+                { prompt: '会社を選択' },
+                { 
+                  class: 'form-control',
+                  onchange: 'this.form.submit();',
+                  style: 'min-width: 180px;'
+                } %>
+          </div>
+        <% end %>
+      <% end %>
     </div>
+    
     <ul class="nav navbar-top-links navbar-right">
+      <% if current_company %>
+        <li class="dropdown">
+          <a href="#" class="dropdown-toggle" data-toggle="dropdown">
+            <i class="fa fa-building"></i>
+            <%= current_company.name %>
+          </a>
+        </li>
+      <% end %>
+      
       <li>
         <%= link_to logout_path, method: :delete do %>
           <i class="fa fa-sign-out"></i>

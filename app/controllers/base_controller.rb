@@ -8,7 +8,7 @@ class BaseController < ApplicationController
       .joins(project: :client)
       .where(is_overtime_approved: false)
       .where(is_overtime_requested: true)
-      .where(users: { department_id: current_user.department_id }).count
+      .where(users: { company_id: current_company.id }).count
   end
 
   private

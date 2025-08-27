@@ -40,7 +40,7 @@ LEFT JOIN daily_report_projects ON daily_reports.id = daily_report_projects.dail
   AND daily_report_projects.is_overtime_approved = 1
   AND daily_report_projects.is_overtime_requested = 1
 WHERE users.permission = 0
-AND users.company_id = #{current_user.company_id}
+AND users.company_id = #{current_company.id}
 GROUP BY users.id, departments.name
 ORDER BY total_hours DESC
 ) AS users

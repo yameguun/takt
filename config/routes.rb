@@ -6,6 +6,8 @@ Rails.application.routes.draw do
   post "login" => "sessions#create"
   delete "logout" => "sessions#destroy"
 
+  patch "switch_company" => "sessions#switch_company", as: :switch_company
+
   get 'auth/slack', to: 'slack_authentications#new', as: 'slack_login'
   get 'auth/slack/callback', to: 'slack_authentications#create'
 
