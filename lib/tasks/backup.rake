@@ -21,8 +21,6 @@ namespace :backup do
   end
 
   def get_bucket
-    puts "AWS_ACCESS_KEY_ID #{ENV['AWS_ACCESS_KEY_ID']}"
-    puts "AWS_SECRET_ACCESS_KEY #{ENV['AWS_SECRET_ACCESS_KEY']}"
     s3 = Aws::S3::Client.new(
       region: 'ap-northeast-1',
       access_key_id: ENV['AWS_ACCESS_KEY_ID'],
