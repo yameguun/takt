@@ -13,5 +13,13 @@ User.find_or_create_by!(email: 'user1@suncackikaku.co.jp') do |user|
   user.department = Department.all.first
   user.password = 'password'
   user.password_confirmation = 'password'
-  user.name = "三角テスト"
+  user.name = "三角太郎"
+end
+
+User.find_or_create_by!(email: 'user2@suncackikaku.co.jp') do |user|
+  user.company = Company.all.first
+  user.department = Department.all.first
+  user.password = 'password'
+  user.password_confirmation = 'password'
+  user.name = "三角花子"
 end

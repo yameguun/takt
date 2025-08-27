@@ -9,7 +9,7 @@ class Manager::OvertimeRequestsController < BaseController
       .joins(project: :client)
       .where(is_overtime_approved: false)
       .where(is_overtime_requested: true)
-      .where(users: { department_id: current_user.department_id })
+      .where(users: { company_id: current_user.company_id })
       .includes(daily_report: :user, project: :client)
       .order('daily_reports.date DESC, users.name ASC')
   end
