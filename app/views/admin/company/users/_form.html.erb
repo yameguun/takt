@@ -1,5 +1,18 @@
-<!-- app/views/admin/company/users/edit.html.erb -->
-<%= form_for @user, url: admin_company_user_path(@company, @user), html: {class: 'form-horizontal', multipart: true} do |f| %>
+<!-- app/views/admin/company/users/_form.html.erb -->
+<%= form_for @user, url: @user.new_record? ? admin_company_users_path(@company) : admin_company_user_path(@company, @user), html: {class: 'form-horizontal', multipart: true} do |f| %>
+
+  <!-- 全体エラーメッセージ表示 -->
+  <% if @user.errors.any? %>
+    <div class="alert alert-danger alert-dismissable">
+      <button aria-hidden="true" data-dismiss="alert" class="close" type="button">×</button>
+      <h4><i class="fa fa-exclamation-triangle"></i> 入力エラーがあります</h4>
+      <ul>
+        <% @user.errors.full_messages.each do |message| %>
+          <li><%= message %></li>
+        <% end %>
+      </ul>
+    </div>
+  <% end %>
 
   <!-- プロフィール画像セクション -->
   <div class="form-group">
@@ -15,9 +28,14 @@
                   style: "max-width: 200px;",
                   alt: @user.name %>
               <p class="m-t-xs text-muted">現在の画像</p>
-              <!-- 削除ボタン -->
-              <%= link_to remove_avatar_admin_company_user_path(@company, @user), class: 'btn btn-danger btn-xs', method: :delete, data: { confirm: '削除しますか？' } do %>
-                <i class="fa fa-trash"></i> 画像を削除
+              <!-- 削除ボタン（編集時のみ表示） -->
+              <% unless @user.new_record? %>
+                <%= link_to remove_avatar_admin_company_user_path(@company, @user), 
+                    class: 'btn btn-danger btn-xs', 
+                    method: :delete, 
+                    data: { confirm: '画像を削除しますか？この操作は元に戻せません。' } do %>
+                  <i class="fa fa-trash"></i> 画像を削除
+                <% end %>
               <% end %>
             </div>
           <% else %>
@@ -58,35 +76,117 @@
 
   <div class="hr-line-dashed"></div>
 
-  <!-- 以下、既存のフォームフィールド -->
+  <!-- 基本情報セクション -->
   <div class="form-group">
-    <label class="col-sm-2 control-label">会社名</label>
+    <label class="col-sm-2 control-label">会社名 <span class="text-danger">*</span></label>
     <div class="col-sm-10">
-      <%= f.select :company_id, Company.all.map{|o| [o.name, o.id]}, {}, {class: 'form-control'} %>
+      <%= f.select :company_id, 
+          Company.all.map{|o| [o.name, o.id]}, 
+          { selected: @company.id }, 
+          { class: 'form-control' } %>
+      <% if f.object.errors.include?(:company_id) %>
+        <p style="color: red;"><%= f.object.errors.full_messages_for(:company_id).first %></p>
+      <% end %>
     </div>
   </div>
 
   <div class="form-group">
     <label class="col-sm-2 control-label">部署</label>
     <div class="col-sm-10">
-      <%= f.select :department_id, @company.departments.map{|o| [o.name, o.id]}, { include_blank: '選択してください' }, {class: 'form-control'} %>
-    </div>
-  </div>
-  
-  <div class="form-group">
-    <label class="col-sm-2 control-label">氏名</label>
-    <div class="col-sm-10">
-      <%= f.text_field :name, class: 'form-control', placeholder: '三角太郎' %>
-      <% if f.object.errors.include?(:name) %>
-        <p style="color: red;"><%= f.object.errors.full_messages_for(:name).first %></p>
+      <%= f.select :department_id, 
+          @company.departments.map{|o| [o.name, o.id]}, 
+          { include_blank: '選択してください' }, 
+          { class: 'form-control' } %>
+      <% if f.object.errors.include?(:department_id) %>
+        <p style="color: red;"><%= f.object.errors.full_messages_for(:department_id).first %></p>
       <% end %>
     </div>
   </div>
   
   <div class="form-group">
-    <label class="col-sm-2 control-label">時間単価</label>
+    <label class="col-sm-2 control-label">氏名 <span class="text-danger">*</span></label>
     <div class="col-sm-10">
-      <%= f.number_field :unit_price, class: 'form-control' %>
+      <%= f.text_field :name, class: 'form-control', placeholder: '三角太郎', required: true %>
+      <% if f.object.errors.include?(:name) %>
+        <p style="color: red;"><%= f.object.errors.full_messages_for(:name).first %></p>
+      <% end %>
+    </div>
+  </div>
+
+  <!-- メールアドレスフィールド -->
+  <div class="form-group">
+    <label class="col-sm-2 control-label">メールアドレス <span class="text-danger">*</span></label>
+    <div class="col-sm-10">
+      <%= f.email_field :email, 
+          class: 'form-control', 
+          placeholder: 'example@company.com',
+          required: @user.new_record? %>
+      <span class="help-block m-b-none">
+        <i class="fa fa-info-circle"></i> 
+        <%= @user.new_record? ? "ログイン時に使用するメールアドレスです" : "メールアドレスの変更は慎重に行ってください" %>
+      </span>
+      <% if f.object.errors.include?(:email) %>
+        <p style="color: red;"><%= f.object.errors.full_messages_for(:email).first %></p>
+      <% end %>
+    </div>
+  </div>
+
+  <!-- パスワードセクション -->
+  <% if @user.new_record? %>
+    <div class="form-group">
+      <label class="col-sm-2 control-label">パスワード <span class="text-danger">*</span></label>
+      <div class="col-sm-10">
+        <%= f.password_field :password, class: 'form-control', required: true %>
+        <span class="help-block m-b-none">
+          <i class="fa fa-info-circle"></i> 8文字以上で入力してください
+        </span>
+        <% if f.object.errors.include?(:password) %>
+          <p style="color: red;"><%= f.object.errors.full_messages_for(:password).first %></p>
+        <% end %>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label class="col-sm-2 control-label">パスワード確認 <span class="text-danger">*</span></label>
+      <div class="col-sm-10">
+        <%= f.password_field :password_confirmation, class: 'form-control', required: true %>
+        <% if f.object.errors.include?(:password_confirmation) %>
+          <p style="color: red;"><%= f.object.errors.full_messages_for(:password_confirmation).first %></p>
+        <% end %>
+      </div>
+    </div>
+  <% else %>
+    <div class="form-group">
+      <label class="col-sm-2 control-label">パスワード変更</label>
+      <div class="col-sm-10">
+        <%= f.password_field :password, class: 'form-control', placeholder: '変更しない場合は空欄' %>
+        <span class="help-block m-b-none">
+          <i class="fa fa-info-circle"></i> パスワードを変更する場合のみ入力してください
+        </span>
+        <% if f.object.errors.include?(:password) %>
+          <p style="color: red;"><%= f.object.errors.full_messages_for(:password).first %></p>
+        <% end %>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label class="col-sm-2 control-label">パスワード確認</label>
+      <div class="col-sm-10">
+        <%= f.password_field :password_confirmation, class: 'form-control', placeholder: '変更しない場合は空欄' %>
+        <% if f.object.errors.include?(:password_confirmation) %>
+          <p style="color: red;"><%= f.object.errors.full_messages_for(:password_confirmation).first %></p>
+        <% end %>
+      </div>
+    </div>
+  <% end %>
+  
+  <div class="form-group">
+    <label class="col-sm-2 control-label">時間単価 <span class="text-danger">*</span></label>
+    <div class="col-sm-10">
+      <div class="input-group">
+        <%= f.number_field :unit_price, class: 'form-control', min: 0, required: true %>
+        <span class="input-group-addon">円</span>
+      </div>
       <% if f.object.errors.include?(:unit_price) %>
         <p style="color: red;"><%= f.object.errors.full_messages_for(:unit_price).first %></p>
       <% end %>
@@ -94,12 +194,12 @@
   </div>
   
   <div class="form-group">
-    <label class="col-sm-2 control-label">権限</label>
+    <label class="col-sm-2 control-label">権限 <span class="text-danger">*</span></label>
     <div class="col-sm-10">
       <%= f.select :permission, 
           User.permission_options, 
           { prompt: '権限を選択してください' }, 
-          { class: 'form-control' } %>
+          { class: 'form-control', required: true } %>
       <span class="help-block m-b-none">
         <i class="fa fa-info-circle"></i> 
         権限レベルによって利用できる機能が異なります
@@ -128,6 +228,14 @@ $(document).ready(function() {
   $('#avatar-upload').on('change', function(e) {
     var file = e.target.files[0];
     if (file && file.type.match('image.*')) {
+      // ファイルサイズチェック（5MB制限）
+      if (file.size > 5 * 1024 * 1024) {
+        alert('ファイルサイズは5MB以下にしてください');
+        this.value = '';
+        $('#preview-container').hide();
+        return;
+      }
+      
       var reader = new FileReader();
       reader.onload = function(e) {
         $('#preview-image').attr('src', e.target.result);
@@ -138,5 +246,23 @@ $(document).ready(function() {
       $('#preview-container').hide();
     }
   });
+
+  // パスワード一致チェック（リアルタイム）
+  <% unless @user.new_record? %>
+    $('input[name="user[password_confirmation]"]').on('input', function() {
+      var password = $('input[name="user[password]"]').val();
+      var confirmation = $(this).val();
+      
+      if (password !== '' && confirmation !== '' && password !== confirmation) {
+        $(this).addClass('error');
+        if ($(this).siblings('.password-error').length === 0) {
+          $(this).after('<span class="password-error" style="color: red; font-size: 12px;">パスワードが一致しません</span>');
+        }
+      } else {
+        $(this).removeClass('error');
+        $(this).siblings('.password-error').remove();
+      }
+    });
+  <% end %>
 });
 </script>

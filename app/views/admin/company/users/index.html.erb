@@ -31,6 +31,7 @@
               <div class="ibox-tools">
                 <span class="label label-primary"><%= @users.total_count %> 件</span>
               </div>
+              <%=link_to "新規登録", new_admin_company_user_path(@company), class: "btn btn-primary" %>
             </div>
             <div class="ibox-content">
               <div class="table-responsive">
