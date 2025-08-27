@@ -6,7 +6,7 @@
     <!-- ヘッダー部分 -->
     <div class="row wrapper border-bottom white-bg page-heading">
       <div class="col-lg-10">
-        <h2>ユーザー管理</h2>
+        <h2>メンバー管理</h2>
         <ol class="breadcrumb">
           <li class="breadcrumb-item">
             <a href="/admin">Home</a>
@@ -15,86 +15,138 @@
             <%= link_to @company.name, admin_companies_path %>
           </li>
           <li class="breadcrumb-item active">
-            <strong>ユーザー一覧</strong>
+            <strong>メンバー一覧</strong>
           </li>
         </ol>
+      </div>
+      <div class="col-lg-2">
+        <div class="title-action">
+          <%= link_to new_admin_company_user_path(@company), 
+              class: "btn btn-primary btn-sm", 
+              title: "新しいメンバーを追加" do %>
+            <i class="fa fa-plus"></i> 新規登録
+          <% end %>
+        </div>
       </div>
     </div>
 
     <!-- メインコンテンツ -->
     <div class="wrapper wrapper-content animated fadeInRight">
       <div class="row">
-        <div class="col-lg-6">
+        <div class="col-lg-12">
           <div class="ibox">
             <div class="ibox-title">
-              <h5>登録ユーザー一覧</h5>
+              <h5>
+                <i class="fa fa-users"></i> 登録メンバー一覧
+                <small class="m-l-sm">企業: <%= @company.name %></small>
+              </h5>
               <div class="ibox-tools">
-                <span class="label label-primary"><%= @users.total_count %> 件</span>
+                <span class="label label-primary">
+                  <i class="fa fa-user"></i> <%= @users.total_count %> 件
+                </span>
               </div>
-              <%=link_to "新規登録", new_admin_company_user_path(@company), class: "btn btn-primary" %>
             </div>
             <div class="ibox-content">
-              <div class="table-responsive">
-                <table class="table table-striped table-hover">
-                  <thead>
-                    <tr>
-                      <th width="80">画像</th>
-                      <th>氏名</th>
-                      <th>部署</th>
-                      <th>時間単価</th>
-                      <th width="120" class="text-center">操作</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <% @users.each do |user| %>
+              <% if @users.any? %>
+                <div class="table-responsive">
+                  <table class="table table-striped table-hover">
+                    <thead>
                       <tr>
-                        <td class="text-center">
-                          <% if user.avatar.attached? %>
-                            <%= image_tag user.avatar, 
-                                class: "img-circle", 
-                                style: "width: 48px; height: 48px; object-fit: cover;",
-                                alt: user.name %>
-                          <% else %>
-                            <div class="img-circle" style="width: 48px; height: 48px; background: #f3f3f4; display: flex; align-items: center; justify-content: center; font-weight: bold; color: #676a6c;">
-                              <%= user.name.first.upcase %>
-                            </div>
-                          <% end %>
-                        </td>
-                        <td class="align-middle">
-                          <strong><%= user.name %></strong>
-                          <br>
-                          <small class="text-muted">ID: <%= user.id %></small>
-                        </td>
-                        <td class="align-middle">
-                          <% if user.department %>
-                            <span class="label label-info"><%= user.department.name %></span>
-                          <% else %>
-                            <span class="text-muted">-</span>
-                          <% end %>
-                        </td>
-                        <td class="align-middle">
-                          <strong><%= number_to_currency(user.unit_price, unit: "¥", precision: 0) %></strong>
-                        </td>
-                        <td class="text-center align-middle">
-                          <div class="btn-group">
-                            <%= link_to edit_admin_company_user_path(@company, user), 
-                                class: 'btn btn-white btn-sm',
-                                title: '編集' do %>
-                              <i class="fa fa-pencil"></i>
-                            <% end %>
-                            <%= link_to admin_company_user_path(@company, user), class: 'btn btn-white btn-sm', method: :delete, data: { confirm: '削除しますか？' } do %>
-                              <i class="fa fa-trash text-danger"></i>
-                            <% end %>
-                          </div>
-                        </td>
+                        <th scope="col" width="80" class="text-center">画像</th>
+                        <th scope="col">メンバー情報</th>
+                        <th scope="col" width="120" class="text-center">部署</th>
+                        <th scope="col" width="120" class="text-center">時間単価</th>
+                        <th scope="col" width="100" class="text-center">操作</th>
                       </tr>
-                    <% end %>
-                  </tbody>
-                </table>
-              </div>
-              <div class="text-center">
-                <%= paginate @users, theme: 'admin' %>
-              </div>
+                    </thead>
+                    <tbody>
+                      <% @users.each do |user| %>
+                        <tr class="user-row">
+                          <td class="text-center table-cell-middle">
+                            <% if user.avatar.attached? %>
+                              <%= image_tag user.avatar, 
+                                  class: "user-avatar", 
+                                  alt: user.name %>
+                            <% else %>
+                              <div class="user-avatar-placeholder">
+                                <%= user.name.first.upcase %>
+                              </div>
+                            <% end %>
+                          </td>
+                          <td class="table-cell-middle">
+                            <div class="user-info">
+                              <strong><%= user.name %></strong>
+                              <br>
+                              <small class="text-muted">
+                                <i class="fa fa-id-card-o"></i> ID: <%= user.id %>
+                              </small>
+                            </div>
+                          </td>
+                          <td class="text-center table-cell-middle">
+                            <% if user.department %>
+                              <span class="label label-info">
+                                <i class="fa fa-building-o"></i> <%= user.department.name %>
+                              </span>
+                            <% else %>
+                              <span class="text-muted">
+                                <i class="fa fa-minus"></i> 未設定
+                              </span>
+                            <% end %>
+                          </td>
+                          <td class="text-center table-cell-middle">
+                            <div class="unit-price">
+                              <strong class="text-navy">
+                                <%= number_to_currency(user.unit_price, unit: "¥", precision: 0) %>
+                              </strong>
+                              <div>
+                                <small class="text-muted">/時間</small>
+                              </div>
+                            </div>
+                          </td>
+                          <td class="text-center table-cell-middle">
+                            <div class="btn-group btn-group-sm">
+                              <%= link_to edit_admin_company_user_path(@company, user), 
+                                  class: 'btn btn-white btn-sm',
+                                  title: '編集' do %>
+                                <i class="fa fa-pencil text-primary"></i>
+                              <% end %>
+                              <%= link_to admin_company_user_path(@company, user), 
+                                  class: 'btn btn-white btn-sm', 
+                                  method: :delete, 
+                                  data: { 
+                                    confirm: "#{user.name}を削除しますか？\nこの操作は取り消せません。"
+                                  } do %>
+                                <i class="fa fa-trash text-danger"></i>
+                              <% end %>
+                            </div>
+                          </td>
+                        </tr>
+                      <% end %>
+                    </tbody>
+                  </table>
+                </div>
+                
+                <!-- ページネーション -->
+                <div class="pagination-wrapper">
+                  <div class="text-center">
+                    <%= paginate @users, theme: 'admin' %>
+                  </div>
+                </div>
+              <% else %>
+                <!-- 空状態の表示 -->
+                <div class="empty-state text-center p-lg">
+                  <i class="fa fa-users fa-3x text-muted m-b-sm"></i>
+                  <h3 class="text-muted">メンバーが登録されていません</h3>
+                  <p class="text-muted">
+                    まだメンバーが登録されていません。<br>
+                    新規登録ボタンから最初のメンバーを追加してください。
+                  </p>
+                  <%= link_to new_admin_company_user_path(@company), 
+                      class: "btn btn-primary m-t-md" do %>
+                    <i class="fa fa-plus"></i> 最初のメンバーを登録
+                  <% end %>
+                </div>
+              <% end %>
             </div>
           </div>
         </div>
@@ -106,23 +158,108 @@
 </div>
 
 <style>
-  /* テーブルの垂直方向の中央揃え */
-  .table > tbody > tr > td.align-middle {
-    vertical-align: middle;
+/* メンバー管理テーブルの基本スタイル */
+.user-avatar, .user-avatar-placeholder {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.user-avatar-placeholder {
+  background: linear-gradient(135deg, #1ab394, #18a689);
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  font-size: 16px;
+  border: 2px solid #e7eaec;
+}
+
+/* Bootstrap 3対応: vertical-align middle */
+.table-cell-middle {
+  vertical-align: middle !important;
+}
+
+/* メンバー情報の整理 */
+.user-info {
+  min-height: 48px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.unit-price {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.unit-price strong {
+  font-size: 16px;
+  margin-bottom: 2px;
+}
+
+/* ホバー効果 */
+.user-row:hover {
+  background-color: #f8f9fa;
+  transition: background-color 0.2s ease;
+}
+
+.user-row:hover .user-avatar-placeholder {
+  border-color: #1ab394;
+}
+
+/* 空状態のスタイル */
+.empty-state {
+  min-height: 300px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+/* ページネーション */
+.pagination-wrapper {
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 1px solid #e7eaec;
+}
+
+/* レスポンシブ対応 */
+@media (max-width: 768px) {
+  .user-avatar, .user-avatar-placeholder {
+    width: 36px;
+    height: 36px;
   }
   
-  /* ホバー時のエフェクト */
-  .table-hover > tbody > tr:hover {
-    background-color: #f5f5f5;
+  .user-avatar-placeholder {
+    font-size: 14px;
   }
   
-  /* ボタングループのスタイル */
-  .btn-group .btn + .btn {
-    margin-left: -1px;
+  .unit-price strong {
+    font-size: 14px;
   }
   
-  /* 画像のプレースホルダー */
-  .img-circle {
-    border-radius: 50%;
+  .title-action {
+    margin-top: 10px;
+    text-align: center;
   }
+}
+
+@media (max-width: 480px) {
+  /* モバイルでは部署列を非表示 */
+  .table th:nth-child(3),
+  .table td:nth-child(3) {
+    display: none;
+  }
+}
+
+/* アクセシビリティ対応 */
+@media (prefers-reduced-motion: reduce) {
+  .user-row {
+    transition: none;
+  }
+}
 </style>
