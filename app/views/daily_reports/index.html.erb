@@ -852,7 +852,20 @@ $(document).ready(function() {
     let currentDropdown = null;
     let currentSelectedIndex = -1;
 
-    // 日報テンプレート定義（提供された仕様通り）
+    // ===== 初期顧客サジェスト機能（新規追加） =====
+    const DEFAULT_CLIENT_SUGGESTIONS_LIMIT = 10;
+    let initialClientsCache = null;
+
+    // 初期顧客候補のキャッシュ取得（パフォーマンス最適化）
+    async function getInitialClients() {
+        if (initialClientsCache && Array.isArray(initialClientsCache) && initialClientsCache.length > 0) {
+            return initialClientsCache;
+        }
+        initialClientsCache = await searchClients('', { limit: DEFAULT_CLIENT_SUGGESTIONS_LIMIT });
+        return initialClientsCache;
+    }
+
+    // 日報テンプレート定義
     const templates = {
         good_bad_next: `[GOOD]:
 
@@ -886,25 +899,18 @@ $(document).ready(function() {
         let currentContent = $reportContent.val();
 
         if (templateText) {
-            // 既存の内容がある場合、区切り線を追加してから追記
             if (currentContent.trim() !== '') {
                 currentContent += '\n\n------------\n\n';
             }
             $reportContent.val(currentContent + templateText);
-            
-            // テキストエリアのスクロール位置を最下部に移動
             $reportContent.scrollTop($reportContent[0].scrollHeight);
-            
-            // フォーカスを設定
             $reportContent.focus();
             
-            // 視覚的フィードバック
             $(this).addClass('btn-success').removeClass('btn-primary');
             setTimeout(() => {
                 $(this).removeClass('btn-success').addClass('btn-primary');
             }, 500);
             
-            // 通知表示
             showNotification('success', 'テンプレートを追加しました');
         }
     });
@@ -918,18 +924,16 @@ $(document).ready(function() {
         }
     });
 
-    // **昨日の作業をコピーする機能（新規追加）**
+    // 昨日の作業をコピーする機能
     $('#copyYesterdayBtn').on('click', async function() {
         const btn = $(this);
         const originalHtml = btn.html();
         const reportDate = btn.data('report-date');
         
-        // 確認ダイアログ
         if (!confirm('昨日の作業をコピーしますか？\n（現在の作業内容は上書きされます）')) {
             return;
         }
         
-        // ボタンを無効化してローディング状態に
         btn.prop('disabled', true).html('<i class="fa fa-spinner fa-spin"></i> コピー中...');
         
         try {
@@ -939,45 +943,36 @@ $(document).ready(function() {
                 const data = await response.json();
                 
                 if (data.status === 'success') {
-                    // 既存の作業項目をクリア
                     $('#workList').empty();
                     workIndex = 0;
                     
-                    // 日報内容をコピー
                     if (data.report_content) {
                         $('textarea[name="report_content"]').val(data.report_content);
                     }
                     
-                    // 作業項目をコピー
                     data.works.forEach((work, index) => {
                         const workItem = createWorkItemFromCopy(index, work);
                         $('#workList').append(workItem);
                         
-                        // 案件のサジェストデータを読み込み
                         const workElement = $(`[data-work-index="${index}"]`);
                         if (work.client_id) {
                             loadProjectSuggestions(workElement, work.client_id);
                         }
-                        
                         workIndex++;
                     });
                     
-                    // 作業項目がない場合は空の項目を1つ追加
                     if (data.works.length === 0) {
                         const workItem = createWorkItem(0);
                         $('#workList').append(workItem);
                         workIndex = 1;
                     }
                     
-                    // UI更新
                     updateWorkNumbers();
                     updateRemoveButtons();
                     calculateTotalHours();
                     
-                    // 成功メッセージとボタン状態の変更
                     showNotification('success', '昨日の作業をコピーしました');
                     
-                    // ボタンを成功状態に変更
                     btn.closest('.form-group').html(`
                         <label class="font-bold text-muted">
                             <i class="fa fa-check"></i> コピー完了
@@ -1152,7 +1147,7 @@ $(document).ready(function() {
         `;
     }
 
-    // 残業申請ボタンの処理（作業単位）
+    // 残業申請ボタンの処理
     $(document).on('click', '.overtime-btn', async function() {
         const btn = $(this);
         const currentStatus = btn.data('status');
@@ -1165,14 +1160,12 @@ $(document).ready(function() {
             return;
         }
         
-        // ボタンを無効化
         btn.prop('disabled', true);
         
         try {
             let response;
             
             if (currentStatus === 'not_requested') {
-                // 残業申請を送信
                 btn.html('<i class="fa fa-spinner fa-spin"></i> 申請中...');
                 
                 response = await fetch(`/api/daily_report_projects/${workId}/request_overtime`, {
@@ -1190,12 +1183,10 @@ $(document).ready(function() {
                 if (response.ok) {
                     const data = await response.json();
                     
-                    // ボタンを承認待ち状態に変更
                     btn.removeClass('btn-primary').addClass('btn-warning');
                     btn.html('<i class="fa fa-clock-o"></i> 承認待ち');
                     btn.data('status', 'pending');
                     
-                    // アラート表示を追加
                     const alertHtml = `
                         <div class="row">
                             <div class="col-md-12">
@@ -1214,7 +1205,6 @@ $(document).ready(function() {
                 }
                 
             } else if (currentStatus === 'pending') {
-                
                 btn.html('<i class="fa fa-spinner fa-spin"></i> 取消中...');
                 
                 response = await fetch(`/api/daily_report_projects/${workId}/cancel_overtime`, {
@@ -1232,12 +1222,10 @@ $(document).ready(function() {
                 if (response.ok) {
                     const data = await response.json();
                     
-                    // ボタンを未申請状態に戻す
                     btn.removeClass('btn-warning').addClass('btn-primary');
                     btn.html('<i class="fa fa-moon-o"></i> 残業申請');
                     btn.data('status', 'not_requested');
                     
-                    // アラート表示を削除
                     btn.closest('.panel-body').find('.alert').parent().parent().remove();
                     
                     showNotification('info', data.message);
@@ -1250,22 +1238,29 @@ $(document).ready(function() {
             console.error('残業申請エラー:', error);
             showNotification('error', error.message || '処理中にエラーが発生しました');
             
-            // エラー時はボタンを元に戻す
             if (currentStatus === 'not_requested') {
                 btn.html('<i class="fa fa-moon-o"></i> 残業申請');
             } else {
                 btn.html('<i class="fa fa-clock-o"></i> 承認待ち');
             }
         } finally {
-            // ボタンを有効化
             btn.prop('disabled', false);
         }
     });
 
-    // 顧客検索API
-    async function searchClients(query) {
+    // 顧客検索API（limit対応版）
+    async function searchClients(query, options = {}) {
         try {
-            const response = await fetch(`/api/clients.json?company_id=${COMPANY_ID}&name=${encodeURIComponent(query)}`);
+            const limit = options.limit || (query.trim() === '' ? DEFAULT_CLIENT_SUGGESTIONS_LIMIT : null);
+            const params = new URLSearchParams();
+            params.append('company_id', COMPANY_ID);
+            if (query !== null && query !== undefined) {
+                params.append('name', query);
+            }
+            if (limit) {
+                params.append('limit', limit);
+            }
+            const response = await fetch(`/api/clients.json?${params.toString()}`);
             if (!response.ok) throw new Error('API request failed');
             const data = await response.json();
             return data.clients || [];
@@ -1324,7 +1319,7 @@ $(document).ready(function() {
         }, 5000);
     }
 
-    // ===== 改善されたサジェスト表示機能 =====
+    // サジェスト表示機能
     function showSuggestions(input, suggestions, type) {
         const dropdown = input.closest('.form-group').find('.suggestions-dropdown');
         dropdown.empty().hide();
@@ -1353,7 +1348,6 @@ $(document).ready(function() {
                 selectSuggestion($(this), input, type);
             });
 
-            // タッチデバイス対応
             div.on('touchend', function(e) {
                 e.preventDefault();
                 selectSuggestion($(this), input, type);
@@ -1377,14 +1371,12 @@ $(document).ready(function() {
         const spaceBelow = windowHeight - inputBottom;
         const spaceAbove = inputOffset.top - scrollTop;
 
-        // 画面下部での上方向表示判定
         if (spaceBelow < dropdownHeight + 20 && spaceAbove > dropdownHeight + 20) {
             dropdown.addClass('show-above');
         } else {
             dropdown.removeClass('show-above');
         }
 
-        // モバイル・作業区分での右寄せ判定
         const isMobile = $(window).width() <= 768;
         const isTaskType = input.hasClass('task-type-input');
         const isRightColumn = input.closest('.col-md-4').index() === 2;
@@ -1422,7 +1414,7 @@ $(document).ready(function() {
         currentSelectedIndex = -1;
     }
 
-    // ===== キーボードナビゲーション =====
+    // キーボードナビゲーション
     $(document).on('keydown', '.client-input, .project-input, .task-type-input', function(e) {
         if (!currentDropdown || !currentDropdown.is(':visible')) return;
 
@@ -1470,7 +1462,6 @@ $(document).ready(function() {
             const selectedItem = items.eq(currentSelectedIndex);
             selectedItem.addClass('highlighted active');
             
-            // 選択項目がビューに入るようにスクロール
             const dropdown = currentDropdown;
             const itemTop = selectedItem.position().top;
             const itemHeight = selectedItem.outerHeight();
@@ -1496,7 +1487,24 @@ $(document).ready(function() {
         }
     }
 
-    // 顧客入力イベント
+    // ===== 初期候補表示機能（メイン機能） =====
+    
+    // 顧客入力フォーカス時（初期候補を事前表示）
+    $(document).on('focus', '.client-input', async function() {
+        const input = $(this);
+        const currentValue = input.val().trim();
+        if (currentValue !== '') return; // 既に値がある場合はスキップ
+        
+        input.addClass('loading');
+        try {
+            const initialClients = await getInitialClients();
+            showSuggestions(input, initialClients, 'client');
+        } finally {
+            input.removeClass('loading');
+        }
+    });
+
+    // 顧客入力イベント（空時は初期候補を表示）
     $(document).on('input', '.client-input', async function() {
         const input = $(this);
         const query = input.val().trim();
@@ -1510,13 +1518,14 @@ $(document).ready(function() {
         projectIdInput.val('');
         workItem.find('.project-suggestions').hide();
 
-        if (query.length < 1) {
-            input.closest('.form-group').find('.client-suggestions').hide();
-            return;
-        }
-
         input.addClass('loading');
         try {
+            if (query.length < 1) {
+                // 入力がない場合は初期候補を表示
+                const initialClients = await getInitialClients();
+                showSuggestions(input, initialClients, 'client');
+                return;
+            }
             const clients = await searchClients(query);
             showSuggestions(input, clients, 'client');
         } finally {
@@ -1599,7 +1608,7 @@ $(document).ready(function() {
         }
     });
 
-    // 作業区分入力フォーカス
+    // 作業区分入力フォーカス（初期候補を表示）
     $(document).on('focus', '.task-type-input', async function() {
         const input = $(this);
         
@@ -1640,7 +1649,7 @@ $(document).ready(function() {
         }
     });
 
-    // 作業追加ボタン
+    // 作業追加ボタン（初期候補表示対応）
     $('#addWorkBtn').click(function() {
         const workItem = createWorkItem(workIndex);
         $('#workList').append(workItem);
@@ -1649,8 +1658,9 @@ $(document).ready(function() {
         updateRemoveButtons();
         calculateTotalHours();
         
-        // 新しく追加した要素にフォーカス
-        $(`[data-work-index="${workIndex - 1}"]`).find('.client-input').focus();
+        // 新しく追加した要素にフォーカス（フォーカス時に初期顧客候補を表示）
+        const $clientInput = $(`[data-work-index="${workIndex - 1}"]`).find('.client-input');
+        $clientInput.focus();
     });
 
     // 作業削除ボタン
@@ -1658,12 +1668,10 @@ $(document).ready(function() {
         const workItem = $(this).closest('.work-item-card');
         const workId = workItem.data('work-id');
         
-        // 既存のレコード（DBに保存済み）の場合は、削除マークを付ける
         if (workId) {
             workItem.addClass('marked-for-deletion');
             workItem.hide();
         } else {
-            // 新規追加したものは完全に削除
             workItem.fadeOut(300, function() {
                 $(this).remove();
                 updateWorkNumbers();
@@ -1832,12 +1840,10 @@ $(document).ready(function() {
         $('.work-item-card').each(function(index) {
             const workItem = $(this);
             
-            // 削除マークが付いていない項目のみ番号を更新
             if (!workItem.hasClass('marked-for-deletion')) {
                 workItem.find('.work-number').text(visibleIndex + 1);
                 workItem.attr('data-work-index', visibleIndex);
                 
-                // name属性も更新（削除マークが付いていない項目のみ）
                 workItem.find('input, textarea').each(function() {
                     const name = $(this).attr('name');
                     if (name && !name.includes('existing_work_ids')) {
@@ -1846,7 +1852,6 @@ $(document).ready(function() {
                     }
                 });
                 
-                // existing_work_ids のインデックスも更新
                 const existingWorkId = workItem.find('.existing-work-id');
                 if (existingWorkId.length) {
                     existingWorkId.attr('name', `existing_work_ids[${visibleIndex}]`);
@@ -1867,7 +1872,7 @@ $(document).ready(function() {
         }
     }
 
-    // ===== 合計時間計算（新デザイン版） =====
+    // 合計時間計算
     function calculateTotalHours() {
         let totalMinutes = 0;
         $('.work-item-card:not(.marked-for-deletion) .work-hours-input').each(function() {
@@ -1877,29 +1882,22 @@ $(document).ready(function() {
         const totalHours = (totalMinutes / 60).toFixed(1);
         $('#totalHours').text(totalHours);
         
-        // プログレスバー（0-8時間の進捗）
         const progressPercent = Math.min((totalMinutes / 480) * 100, 100);
         $('#progressBar').css('width', progressPercent + '%');
         
-        // ウィジェットとバッジの取得
         const $widget = $('#totalHoursWidget');
         const $badge = $('#statusBadge');
         
-        // 既存のステータスクラスを削除
         $widget.removeClass('status-normal status-warning status-danger');
         $badge.hide().text('');
         
-        // ステータス判定と表示
         if (totalMinutes > 1440) {
-            // 24時間超過（危険）
             $widget.addClass('status-danger');
             $badge.text('要確認').show();
         } else if (totalMinutes > 480) {
-            // 8時間超過（警告）
             $widget.addClass('status-warning');
             $badge.text('残業').show();
         } else {
-            // 通常時間
             $widget.addClass('status-normal');
         }
     }
@@ -1945,16 +1943,17 @@ $(document).ready(function() {
             return false;
         }
 
-        // 削除マークが付いた項目を完全に削除してからフォーム送信
         $('.work-item-card.marked-for-deletion').remove();
 
-        // 送信中表示
         $(this).find('button[type="submit"]').prop('disabled', true)
             .html('<i class="fa fa-spinner fa-spin"></i> 送信中...');
     });
 
-    // 初期化処理
-    function initializePage() {
+    // 初期化処理（先読み機能付き）
+    async function initializePage() {
+        // 初期顧客候補を先読み（体感速度改善）
+        getInitialClients().catch(() => {});
+
         $('.work-item-card').each(function() {
             const workItem = $(this);
             const clientId = workItem.find('.client-id').val();
@@ -1962,7 +1961,6 @@ $(document).ready(function() {
                 loadProjectSuggestions(workItem, clientId);
             }
             
-            // 初期時間表示
             const minutes = parseInt(workItem.find('.work-hours-input').val()) || 0;
             const hours = (minutes / 60).toFixed(1);
             workItem.find('.hours-display').text(hours);
