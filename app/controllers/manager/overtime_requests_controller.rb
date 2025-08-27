@@ -34,7 +34,7 @@ class Manager::OvertimeRequestsController < BaseController
     @daily_report_project = DailyReportProject.find(params[:id])
     
     # セキュリティチェック：同じ部署の申請のみ承認可能
-    unless @daily_report_project.daily_report.user.department_id == current_user.department_id
+    unless @daily_report_project.daily_report.user.company_id == current_company.id
       respond_to do |format|
         format.json { render json: { success: false, message: '権限がありません' }, status: :forbidden }
         format.html { redirect_to manager_overtime_requests_path, alert: '権限がありません' }
