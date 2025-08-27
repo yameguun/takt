@@ -48,6 +48,7 @@ gem "seed-fu"
 gem "csv"
 gem "discard"
 gem "aws-sdk-s3"
+gem "dotenv-rails"
 
 group :development, :test do
   # See https://guides.rubyonrails.org/debugging_rails_applications.html#debugging-with-the-debug-gem
@@ -58,7 +59,6 @@ group :development, :test do
 
   # Omakase Ruby styling [https://github.com/rails/rubocop-rails-omakase/]
   gem "rubocop-rails-omakase", require: false
-  gem "dotenv-rails"
   gem "annotaterb"
 end
 
