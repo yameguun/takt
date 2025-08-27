@@ -36,6 +36,7 @@ services:
       DB_USERNAME: user
       DB_PASSWORD: password
       RAILS_LOG_TO_STDOUT: "true"
+      DISABLE_SPRING: "1"  # この行を追加
   worker:
     build: .
     platform: linux/x86_64
