@@ -202,13 +202,6 @@
                     <span class="label label-success m-l-xs">余裕あり</span> <%= (@overtime_limit * 0.4).to_i %>時間未満
                   </small>
                 </div>
-                
-                <!-- エクスポートボタン -->
-                <div class="m-t-md text-right">
-                  <%= link_to "#", class: "btn btn-primary btn-sm", id: "export-csv" do %>
-                    <i class="fa fa-download"></i> CSVエクスポート
-                  <% end %>
-                </div>
               <% else %>
                 <div class="text-center p-lg">
                   <i class="fa fa-info-circle fa-3x text-muted"></i>
@@ -229,65 +222,36 @@
 $(document).ready(function() {
     // 月選択ドロップダウンの処理
     $('#month-filter').on('change', function() {
-        var url = $(this).val();
-        if (url) {
-            window.location.href = url;
-        }
+      var url = $(this).val();
+      if (url) {
+        window.location.href = url;
+      }
     });
 
     // プログレスバーアニメーション
     $('.progress-bar').each(function() {
-        var $this = $(this);
-        var width = $this.css('width');
-        var percentage = $this.data('percentage');
-        $this.css('width', 0);
-        $this.animate({
-            width: width
-        }, 1000);
+      var $this = $(this);
+      var width = $this.css('width');
+      var percentage = $this.data('percentage');
+      $this.css('width', 0);
+      $this.animate({
+        width: width
+      }, 1000);
     });
     
     // DataTables初期化（オプション）
     if ($.fn.DataTable && $('#overtime-table tbody tr').length > 10) {
-        $('#overtime-table').DataTable({
-            pageLength: 25,
-            responsive: true,
-            language: {
-                url: "//cdn.datatables.net/plug-ins/1.10.25/i18n/Japanese.json"
-            },
-            order: [[2, 'desc']], // 残業時間で降順ソート
-            columnDefs: [
-                { orderable: false, targets: 3 } // 状態列はソート無効
-            ]
-        });
+      $('#overtime-table').DataTable({
+        pageLength: 25,
+        responsive: true,
+        language: {
+          url: "//cdn.datatables.net/plug-ins/1.10.25/i18n/Japanese.json"
+        },
+        order: [[2, 'desc']], // 残業時間で降順ソート
+        columnDefs: [
+          { orderable: false, targets: 3 } // 状態列はソート無効
+        ]
+      });
     }
-    
-    // CSVエクスポート
-    $('#export-csv').on('click', function(e) {
-        e.preventDefault();
-        
-        var csv = [];
-        var headers = ['氏名', '部署', '残業時間(h)', '状態'];
-        csv.push(headers.join(','));
-        
-        $('#overtime-table tbody tr').each(function() {
-            var row = [];
-            row.push($(this).find('td:eq(0) strong').text());
-            row.push($(this).find('td:eq(1)').text());
-            row.push($(this).find('td:eq(2) span').text().replace(/h.*/, '').trim());
-            row.push($(this).find('td:eq(3) span').text());
-            csv.push(row.join(','));
-        });
-        
-        var csvContent = csv.join('\n');
-        var blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
-        var link = document.createElement('a');
-        var url = URL.createObjectURL(blob);
-        link.setAttribute('href', url);
-        link.setAttribute('download', '残業時間レポート_<%= @current_month %>.csv');
-        link.style.visibility = 'hidden';
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-    });
 });
 </script>
