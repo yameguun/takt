@@ -52,7 +52,8 @@ class User < ApplicationRecord
   # マネージャー除外用スコープ
   scope :non_managers, -> { where(permission: 0) }
 
-  validates :email, presence: true, uniqueness: true, format: { with: URI::MailTo::EMAIL_REGEXP }
+  validates :email, presence: true, uniqueness: true
+  validate :email_or_alphanumeric_format
   validates :unit_price, presence: true, numericality: true
   validates :permission, inclusion: { in: PERMISSION_LEVELS.keys }
   validate :acceptable_image
@@ -101,6 +102,21 @@ class User < ApplicationRecord
     acceptable_types = ["image/jpeg", "image/jpg", "image/png", "image/gif", "image/webp"]
     unless acceptable_types.include?(avatar.blob.content_type)
       errors.add(:avatar, "はJPEG、PNG、GIF、WebP形式でアップロードしてください")
+    end
+  end
+
+  def email_or_alphanumeric_format
+    # emailが存在する場合にのみチェックを行う
+    # (presence: true が既にnilや空文字列をハンドルしているため)
+    if email.present?
+      # 標準のメールアドレス形式にマッチするか、または半角英数字のみの形式にマッチするか
+      is_email_format = URI::MailTo::EMAIL_REGEXP.match?(email)
+      is_alphanumeric_format = /\A[a-zA-Z0-9]+\z/.match?(email)
+
+      # どちらの形式にもマッチしない場合にエラーを追加
+      unless is_email_format || is_alphanumeric_format
+        errors.add(:email, "は有効なメールアドレス形式、または半角英数字のみで入力してください")
+      end
     end
   end
 end

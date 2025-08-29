@@ -115,9 +115,9 @@
 
   <!-- メールアドレスフィールド -->
   <div class="form-group">
-    <label class="col-sm-2 control-label">メールアドレス <span class="text-danger">*</span></label>
+    <label class="col-sm-2 control-label">メールアドレスまたはID <span class="text-danger">*</span></label>
     <div class="col-sm-10">
-      <%= f.email_field :email, 
+      <%= f.text_field :email, 
           class: 'form-control', 
           placeholder: 'example@company.com',
           required: @user.new_record? %>
