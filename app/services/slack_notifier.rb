@@ -71,7 +71,7 @@ class SlackNotifier
 
     def sanitize_text(text)
       return "" if text.nil?
-      text.to_s.strip.truncate(40000)
+      text.to_s.strip.truncate(60000)
     end
 
     def send_request(payload, custom_webhook_url)
