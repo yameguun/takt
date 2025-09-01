@@ -9,6 +9,15 @@
       <% end %>
     </div>
   </div>
+  <div class="form-group">
+    <label class="col-sm-2 control-label">日報内容の説明</label>
+    <div class="col-sm-10">
+      <%= f.text_area :daily_report_description, class: 'form-control', rows: 10 %>
+      <% if f.object.errors.include?(:daily_report_description) %>
+      <p style="color: red;"><%= f.object.errors.full_messages_for(:daily_report_description).first %>
+      <% end %>
+    </div>
+  </div>
   <div class="hr-line-dashed"></div>
   <div class="form-group">
     <div class="col-sm-4 col-sm-offset-2">
