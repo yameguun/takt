@@ -243,7 +243,7 @@ class DailyReportsController < BaseController
     end
 
     if daily_report.content.present?
-      content_preview = daily_report.content.truncate(200)
+      content_preview = daily_report.content.truncate(1000)
       blocks << {
         type: "section",
         text: {
