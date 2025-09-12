@@ -24,6 +24,10 @@ Rails.application.routes.draw do
   # カレンダー
   get 'calendar', to: 'calendars#show'
 
+  # ユーザーパスワード更新
+  get 'user', to: 'users#index'
+  put 'user', to: 'users#update'
+
   # 残業承認画面とコメント機能
   namespace :manager do
     resources :overtime_requests, only: [:index] do

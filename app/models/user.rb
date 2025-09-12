@@ -58,6 +58,28 @@ class User < ApplicationRecord
   validates :permission, inclusion: { in: PERMISSION_LEVELS.keys }
   validate :acceptable_image
 
+  # パスワードバリデーション（更新時のみ適用）
+  validates :password, length: { minimum: 6 }, allow_nil: true
+  validates :password_confirmation, presence: true, if: :password_changed?
+  
+  # SNSログインユーザーかどうかを判定
+  def sns_user?
+    authentication.present?
+  end
+
+  # パスワードが設定されているかを判定
+  def has_password?
+    password_digest.present?
+  end
+
+  # ログイン方法の表示用
+  def login_methods
+    methods = []
+    methods << "パスワード" if has_password?
+    methods << "Slack" if sns_user?
+    methods.join("・")
+  end
+
   def is_manager?
     self.permission > 0
   end
@@ -118,5 +140,9 @@ class User < ApplicationRecord
         errors.add(:email, "は有効なメールアドレス形式、または半角英数字のみで入力してください")
       end
     end
+  end
+
+  def password_changed?
+    password.present?
   end
 end

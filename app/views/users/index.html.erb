@@ -1,0 +1,229 @@
+<!-- app/views/users/index.html.erb -->
+<% provide(:title, "パスワード変更") %>
+<div id="wrapper">
+  <%= render 'shared/header' %>
+  <div id="page-wrapper" class="gray-bg">
+    <%= render 'shared/navbar' %>
+    
+    <!-- ヘッダー部分 -->
+    <div class="row wrapper border-bottom white-bg page-heading">
+      <div class="col-lg-12">
+        <h2 class="m-t-md">
+          <i class="fa fa-lock text-navy"></i> パスワード<%= @user.authentication.present? ? "設定" : "変更" %>
+        </h2>
+        <ol class="breadcrumb">
+          <li class="breadcrumb-item">
+            <a href="/">ホーム</a>
+          </li>
+          <li class="breadcrumb-item active">
+            <strong>パスワード<%= @user.authentication.present? ? "設定" : "変更" %></strong>
+          </li>
+        </ol>
+      </div>
+    </div>
+
+    <!-- メインコンテンツ -->
+    <div class="wrapper wrapper-content animated fadeInRight">
+      <div class="row">
+        <div class="col-lg-6 col-lg-offset-3">
+          <div class="ibox">
+            <div class="ibox-title">
+              <h5>
+                <% if @user.authentication.present? %>
+                  <i class="fa fa-slack"></i> パスワードの設定
+                <% else %>
+                  <i class="fa fa-key"></i> パスワードの変更
+                <% end %>
+              </h5>
+            </div>
+            <div class="ibox-content">
+              
+              <% if @user.authentication.present? %>
+                <!-- SNSログインユーザー向けの説明 -->
+                <div class="alert alert-info">
+                  <h4><i class="fa fa-info-circle"></i> Slackログインをご利用中です</h4>
+                  <p class="m-t-xs">
+                    現在、Slackアカウントでログインしています。<br>
+                    メールアドレスとパスワードでもログインできるようにするため、パスワードを設定できます。
+                  </p>
+                </div>
+              <% end %>
+
+              <%= form_with model: @user, url: user_path, method: :put, local: true do |f| %>
+                
+                <% if flash[:alert] %>
+                  <div class="alert alert-danger">
+                    <%= flash[:alert] %>
+                  </div>
+                <% end %>
+
+                <% if flash[:notice] %>
+                  <div class="alert alert-success">
+                    <%= flash[:notice] %>
+                  </div>
+                <% end %>
+
+                <% if @user.errors.any? %>
+                  <div class="alert alert-danger">
+                    <ul class="m-b-none">
+                      <% @user.errors.full_messages.each do |message| %>
+                        <li><%= message %></li>
+                      <% end %>
+                    </ul>
+                  </div>
+                <% end %>
+
+                <% unless @user.authentication.present? %>
+                  <!-- 通常のパスワード認証ユーザーのみ現在のパスワードを要求 -->
+                  <div class="form-group">
+                    <label class="control-label">現在のパスワード <span class="text-danger">*</span></label>
+                    <%= password_field_tag :current_password, nil, 
+                        class: "form-control", 
+                        required: true,
+                        autocomplete: "current-password",
+                        placeholder: "現在のパスワードを入力" %>
+                    <span class="help-block m-b-none">
+                      <i class="fa fa-info-circle"></i> セキュリティのため、現在のパスワードの確認が必要です
+                    </span>
+                  </div>
+
+                  <div class="hr-line-dashed"></div>
+                <% end %>
+
+                <div class="form-group">
+                  <%= f.label :password, "新しいパスワード", class: "control-label" %>
+                  <span class="text-danger">*</span>
+                  <%= f.password_field :password, 
+                      class: "form-control", 
+                      required: true,
+                      autocomplete: "new-password",
+                      placeholder: "新しいパスワードを入力",
+                      minlength: 6 %>
+                  <span class="help-block m-b-none">
+                    <i class="fa fa-info-circle"></i> 6文字以上で設定してください
+                  </span>
+                </div>
+
+                <div class="form-group">
+                  <%= f.label :password_confirmation, "新しいパスワード（確認）", class: "control-label" %>
+                  <span class="text-danger">*</span>
+                  <%= f.password_field :password_confirmation, 
+                      class: "form-control", 
+                      required: true,
+                      autocomplete: "new-password",
+                      placeholder: "新しいパスワードを再入力",
+                      minlength: 6 %>
+                  <span class="help-block m-b-none">
+                    <i class="fa fa-info-circle"></i> 確認のため、もう一度入力してください
+                  </span>
+                </div>
+
+                <div class="hr-line-dashed"></div>
+
+                <div class="form-group">
+                  <div class="row">
+                    <div class="col-sm-4 col-sm-offset-2">
+                      <%= link_to root_path, class: "btn btn-white btn-block" do %>
+                        <i class="fa fa-times"></i> キャンセル
+                      <% end %>
+                    </div>
+                    <div class="col-sm-4">
+                      <%= f.submit @user.authentication.present? ? "パスワードを設定" : "パスワードを変更", 
+                          class: "btn btn-primary btn-block",
+                          data: { 
+                            confirm: @user.authentication.present? ? 
+                              "パスワードを設定してもよろしいですか？" : 
+                              "パスワードを変更してもよろしいですか？",
+                            disable_with: "処理中..." 
+                          } %>
+                    </div>
+                  </div>
+                </div>
+
+                <% if @user.authentication.present? %>
+                  <div class="alert alert-warning">
+                    <h4><i class="fa fa-exclamation-triangle"></i> ご注意</h4>
+                    <ul class="m-t-xs m-b-none">
+                      <li>パスワードを設定後も、引き続きSlackログインは利用可能です</li>
+                      <li>メールアドレス: <strong><%= @user.email %></strong> でログインできるようになります</li>
+                      <li>パスワードを忘れた場合は、Slackログインをご利用ください</li>
+                    </ul>
+                  </div>
+                <% else %>
+                  <div class="alert alert-info">
+                    <h4><i class="fa fa-shield"></i> セキュリティに関する注意事項</h4>
+                    <ul class="m-t-xs m-b-none">
+                      <li>パスワードは定期的に変更することをお勧めします</li>
+                      <li>他のサービスと同じパスワードの使用は避けてください</li>
+                      <li>英数字や記号を組み合わせた強力なパスワードを設定してください</li>
+                      <li>パスワードは他人に教えないでください</li>
+                    </ul>
+                  </div>
+                <% end %>
+
+              <% end %>
+            </div>
+          </div>
+
+          <% if @user.authentication.present? %>
+            <!-- SNS連携情報の表示 -->
+            <div class="ibox">
+              <div class="ibox-title">
+                <h5><i class="fa fa-link"></i> 連携中のアカウント</h5>
+              </div>
+              <div class="ibox-content">
+                <div class="row">
+                  <div class="col-sm-12">
+                    <div class="well">
+                      <div class="row">
+                        <div class="col-xs-2 text-center">
+                          <i class="fa fa-slack" style="font-size: 32px; color: #4A154B;"></i>
+                        </div>
+                        <div class="col-xs-10">
+                          <h4 class="m-t-xs">Slack</h4>
+                          <p class="text-muted m-b-none">
+                            UID: <%= @user.authentication.uid %><br>
+                            連携日: <%= @user.authentication.created_at.strftime("%Y年%m月%d日") %>
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          <% end %>
+
+        </div>
+      </div>
+    </div>
+    <%= render 'shared/footer' %>
+  </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  // パスワード強度チェック
+  const passwordField = document.getElementById('user_password');
+  const confirmField = document.getElementById('user_password_confirmation');
+  
+  if (passwordField && confirmField) {
+    // パスワード確認フィールドでのリアルタイムバリデーション
+    confirmField.addEventListener('input', function() {
+      if (this.value !== passwordField.value) {
+        this.setCustomValidity('パスワードが一致しません');
+      } else {
+        this.setCustomValidity('');
+      }
+    });
+    
+    passwordField.addEventListener('input', function() {
+      if (confirmField.value && this.value !== confirmField.value) {
+        confirmField.setCustomValidity('パスワードが一致しません');
+      } else {
+        confirmField.setCustomValidity('');
+      }
+    });
+  }
+});
+</script>
