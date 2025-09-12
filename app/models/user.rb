@@ -24,11 +24,11 @@
 #
 #  fk_rails_...  (company_id => companies.id)
 #
-
 class User < ApplicationRecord
   include Discard::Model
 
-  has_secure_password
+  # has_secure_passwordにvalidationsオプションを追加
+  has_secure_password validations: false
 
   has_one_attached :avatar
 
@@ -58,9 +58,13 @@ class User < ApplicationRecord
   validates :permission, inclusion: { in: PERMISSION_LEVELS.keys }
   validate :acceptable_image
 
-  # パスワードバリデーション（更新時のみ適用）
-  validates :password, length: { minimum: 6 }, allow_nil: true
-  validates :password_confirmation, presence: true, if: :password_changed?
+  # パスワードバリデーション
+  # 新規作成時：SNSログインでない場合は必須
+  # 更新時：パスワードが入力された場合のみ検証
+  validates :password, presence: true, on: :create, unless: :sns_user?
+  validates :password, length: { minimum: 6 }, allow_blank: true
+  validates :password, confirmation: true, if: :password_present?
+  validates :password_confirmation, presence: true, if: :password_present?
   
   # SNSログインユーザーかどうかを判定
   def sns_user?
@@ -80,6 +84,11 @@ class User < ApplicationRecord
     methods.join("・")
   end
 
+  # 両方の認証方法が利用可能か
+  def dual_auth_enabled?
+    has_password? && sns_user?
+  end
+
   def is_manager?
     self.permission > 0
   end
@@ -94,12 +103,12 @@ class User < ApplicationRecord
     PERMISSION_LEVELS.map { |value, label| [label, value] }
   end
 
-   # サムネイル版（100x100以内にリサイズ）
+  # サムネイル版（100x100以内にリサイズ）
   def avatar_thumbnail
     avatar.variant(
       resize_to_limit: [100, 100],
-      format: :webp,  # WebP形式に変換（軽量化）
-      saver: { quality: 80 }  # 品質80%
+      format: :webp,
+      saver: { quality: 80 }
     ).processed
   end
   
@@ -128,21 +137,18 @@ class User < ApplicationRecord
   end
 
   def email_or_alphanumeric_format
-    # emailが存在する場合にのみチェックを行う
-    # (presence: true が既にnilや空文字列をハンドルしているため)
     if email.present?
-      # 標準のメールアドレス形式にマッチするか、または半角英数字のみの形式にマッチするか
       is_email_format = URI::MailTo::EMAIL_REGEXP.match?(email)
       is_alphanumeric_format = /\A[a-zA-Z0-9]+\z/.match?(email)
 
-      # どちらの形式にもマッチしない場合にエラーを追加
       unless is_email_format || is_alphanumeric_format
         errors.add(:email, "は有効なメールアドレス形式、または半角英数字のみで入力してください")
       end
     end
   end
 
-  def password_changed?
+  # パスワードが入力されているかを判定（バリデーション用）
+  def password_present?
     password.present?
   end
 end

@@ -74,16 +74,15 @@
                 <% end %>
 
                 <% unless @user.authentication.present? %>
-                  <!-- 通常のパスワード認証ユーザーのみ現在のパスワードを要求 -->
+                  <!-- 通常のパスワード認証ユーザーの場合のみ表示 -->
                   <div class="form-group">
-                    <label class="control-label">現在のパスワード <span class="text-danger">*</span></label>
+                    <label class="control-label">現在のパスワード</label>
                     <%= password_field_tag :current_password, nil, 
                         class: "form-control", 
-                        required: true,
                         autocomplete: "current-password",
                         placeholder: "現在のパスワードを入力" %>
                     <span class="help-block m-b-none">
-                      <i class="fa fa-info-circle"></i> セキュリティのため、現在のパスワードの確認が必要です
+                      <i class="fa fa-info-circle"></i> セキュリティのため、現在のパスワードの入力を推奨します
                     </span>
                   </div>
 
