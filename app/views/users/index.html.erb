@@ -73,22 +73,6 @@
                   </div>
                 <% end %>
 
-                <% unless @user.authentication.present? %>
-                  <!-- 通常のパスワード認証ユーザーの場合のみ表示 -->
-                  <div class="form-group">
-                    <label class="control-label">現在のパスワード</label>
-                    <%= password_field_tag :current_password, nil, 
-                        class: "form-control", 
-                        autocomplete: "current-password",
-                        placeholder: "現在のパスワードを入力" %>
-                    <span class="help-block m-b-none">
-                      <i class="fa fa-info-circle"></i> セキュリティのため、現在のパスワードの入力を推奨します
-                    </span>
-                  </div>
-
-                  <div class="hr-line-dashed"></div>
-                <% end %>
-
                 <div class="form-group">
                   <%= f.label :password, "新しいパスワード", class: "control-label" %>
                   <span class="text-danger">*</span>

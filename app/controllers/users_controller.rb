@@ -7,16 +7,6 @@ class UsersController < BaseController
   end
 
   def update
-    # 現在のパスワードが入力されている場合は検証
-    if params[:current_password].present?
-      unless @user.authenticate(params[:current_password])
-        flash.now[:alert] = "現在のパスワードが正しくありません"
-        render :index, status: :unprocessable_entity
-        return
-      end
-    end
-
-    # 新しいパスワードの更新
     if @user.update(password_params)
       flash[:notice] = @user.authentication.present? ? "パスワードを設定しました" : "パスワードを変更しました"
       redirect_to user_path
